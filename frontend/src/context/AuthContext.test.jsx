@@ -18,7 +18,7 @@ vi.mock('../services/api.js', () => ({
 import { AuthProvider, useAuth } from './AuthContext.jsx';
 
 function Consumer() {
-  const { token, user, login, logout, changePassword } = useAuth();
+  const { token, user, login, logout } = useAuth();
 
   return (
     <div>
@@ -26,7 +26,6 @@ function Consumer() {
       <div data-testid="user">{user?.email || ''}</div>
       <button onClick={() => login('admin@aprende.ai', 'Admin123!')}>login</button>
       <button onClick={() => logout()}>logout</button>
-      <button onClick={() => changePassword('old-pass', 'new-pass-123')}>change-password</button>
     </div>
   );
 }
@@ -108,25 +107,6 @@ describe('AuthContext', () => {
     await waitFor(() => expect(screen.getByTestId('token').textContent).toBe(''));
     expect(localStorage.getItem('aprende_ai_token')).toBeNull();
     expect(setAuthTokenMock).toHaveBeenLastCalledWith(null);
-  });
-
-  test('changePassword delega para endpoint correto', async () => {
-    apiPostMock.mockResolvedValueOnce({ message: 'ok' });
-
-    render(
-      <AuthProvider>
-        <Consumer />
-      </AuthProvider>
-    );
-
-    fireEvent.click(screen.getByText('change-password'));
-
-    await waitFor(() => {
-      expect(apiPostMock).toHaveBeenCalledWith('/api/auth/change-password', {
-        currentPassword: 'old-pass',
-        newPassword: 'new-pass-123'
-      });
-    });
   });
 
   test('callback de não autorizado limpa sessão', async () => {

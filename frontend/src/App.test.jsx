@@ -1,85 +1,84 @@
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Outlet } from 'react-router-dom';
 import { vi } from 'vitest';
 
-const startSimulationMock = vi.fn();
+let authToken = null;
+const routerFuture = { v7_startTransition: true, v7_relativeSplatPath: true };
 
-vi.mock('./services/simulationApi', () => ({
-  getSimulationCatalog: vi.fn().mockResolvedValue([
-    {
-      id: 'scenario-1',
-      title: 'Cenario de teste',
-      description: 'Descricao de teste'
-    }
-  ]),
-  startSimulation: (...args) => startSimulationMock(...args)
+vi.mock('./context/AuthContext.jsx', () => ({
+  useAuth: () => ({
+    token: authToken
+  })
 }));
 
-vi.mock('./features/onboarding/OnboardingPage.jsx', () => ({
-  default: () => <div>Mock Onboarding</div>
+vi.mock('./components/Layout.jsx', () => ({
+  default: () => (
+    <div>
+      <div>Mock Layout</div>
+      <Outlet />
+    </div>
+  )
 }));
 
-vi.mock('./features/journey/JourneyPage.jsx', () => ({
-  default: () => <div>Mock Journey</div>
+vi.mock('./pages/LoginPage.jsx', () => ({
+  default: () => <div>Mock Login</div>
 }));
 
-vi.mock('./features/simulation/SimulationPage.jsx', () => ({
-  default: () => <div>Mock Simulation</div>
+vi.mock('./pages/DashboardPage.jsx', () => ({
+  default: () => <div>Mock Dashboard</div>
 }));
 
-vi.mock('./features/mentor/MentorPage.jsx', () => ({
-  default: () => <div>Mock Mentor</div>
+vi.mock('./pages/TracksPage.jsx', () => ({
+  default: () => <div>Mock Tracks</div>
 }));
 
-vi.mock('./features/assessment/AssessmentPage.jsx', () => ({
-  default: () => <div>Mock Assessment</div>
+vi.mock('./pages/CompetenciesPage.jsx', () => ({
+  default: () => <div>Mock Competencies</div>
+}));
+
+vi.mock('./pages/KnowledgePage.jsx', () => ({
+  default: () => <div>Mock Knowledge</div>
+}));
+
+vi.mock('./pages/IntegrationPage.jsx', () => ({
+  default: () => <div>Mock Integration</div>
 }));
 
 import App from './App.jsx';
 
 describe('App', () => {
-  test('inicia cenário e navega para a simulação', async () => {
-    startSimulationMock.mockResolvedValueOnce({ id: 'run-1' });
-
-    const { fireEvent } = await import('@testing-library/react');
-
+  test('renderiza login quando não há token', async () => {
+    authToken = null;
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/']} future={routerFuture}>
         <App />
       </MemoryRouter>
     );
 
-    await screen.findByText('Cenario de teste');
-    fireEvent.click(screen.getByRole('button', { name: 'Iniciar' }));
-
-    expect(startSimulationMock).toHaveBeenCalledWith({ scenarioId: 'scenario-1' });
-    expect(await screen.findByText('Mock Simulation')).toBeInTheDocument();
+    expect(await screen.findByText('Mock Login')).toBeInTheDocument();
   });
 
-  test('renderiza navegação principal', async () => {
+  test('renderiza rota protegida com layout e dashboard', async () => {
+    authToken = 'token-valido';
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/']} future={routerFuture}>
         <App />
       </MemoryRouter>
     );
 
-    await screen.findByText('Cenario de teste');
-
-    expect(screen.getByRole('link', { name: 'Início' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Onboarding' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Jornada' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Mentor' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Assessment' })).toBeInTheDocument();
+    expect(await screen.findByText('Mock Layout')).toBeInTheDocument();
+    expect(screen.getByText('Mock Dashboard')).toBeInTheDocument();
   });
 
-  test('renderiza cenários vindos do catálogo', async () => {
+  test('renderiza rota de trilhas quando autenticado', async () => {
+    authToken = 'token-valido';
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/tracks']} future={routerFuture}>
         <App />
       </MemoryRouter>
     );
 
-    expect(await screen.findByText('Cenario de teste')).toBeInTheDocument();
-    expect(screen.getByText('Descricao de teste')).toBeInTheDocument();
+    expect(await screen.findByText('Mock Layout')).toBeInTheDocument();
+    expect(screen.getByText('Mock Tracks')).toBeInTheDocument();
   });
 });

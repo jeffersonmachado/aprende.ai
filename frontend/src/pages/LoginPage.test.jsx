@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 
 const loginMock = vi.fn();
 const navigateMock = vi.fn();
+const routerFuture = { v7_startTransition: true, v7_relativeSplatPath: true };
 
 vi.mock('../context/AuthContext.jsx', () => ({
   useAuth: () => ({ login: (...args) => loginMock(...args) })
@@ -28,7 +29,7 @@ describe('LoginPage', () => {
     loginMock.mockResolvedValueOnce({ user: { id: 'u1' } });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={routerFuture}>
         <LoginPage />
       </MemoryRouter>
     );
@@ -47,7 +48,7 @@ describe('LoginPage', () => {
     loginMock.mockRejectedValueOnce(new Error('Credenciais inválidas'));
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={routerFuture}>
         <LoginPage />
       </MemoryRouter>
     );
