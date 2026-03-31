@@ -1,16 +1,22 @@
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-
-function normalizeBasePath(value) {
-	if (!value || value === '/') return '/';
-	const withLeadingSlash = value.startsWith('/') ? value : `/${value}`;
-	return withLeadingSlash.endsWith('/') ? withLeadingSlash : `${withLeadingSlash}/`;
-}
-
-export default defineConfig(({ mode }) => {
-	const env = loadEnv(mode, process.cwd(), '');
-	return {
-		base: normalizeBasePath(env.VITE_APP_BASE_PATH || '/'),
-		plugins: [react()]
-	};
+export default defineConfig({
+  plugins: [react()],
+  server: { port: 5173 },
+  define: { __API_BASE__: JSON.stringify(process.env.VITE_API_BASE || 'http://localhost:3001/api') },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: './src/test/setupTests.js',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      thresholds: {
+        lines: 70,
+        functions: 70,
+        branches: 70,
+        statements: 70
+      }
+    }
+  }
 });

@@ -1,31 +1,11 @@
 {
-  "name": "aprende-ai",
+  "name": "aprende-ai-workspace",
   "private": true,
-  "version": "0.2.1",
-  "workspaces": [
-    "api",
-    "frontend"
-  ],
+  "workspaces": ["api", "frontend"],
   "scripts": {
-    "predev": "fuser -k 3015/tcp 5174/tcp 2>/dev/null; true",
-    "dev": "concurrently --names api,vite --prefix-colors cyan,magenta \"npm --prefix api run dev\" \"npm --prefix frontend run dev\"",
-    "dev:api": "npm --prefix api run dev",
-    "dev:frontend": "npm --prefix frontend run dev",
-    "db:migrate": "npm --prefix api run db:migrate",
-    "db:seed": "npm --prefix api run db:seed",
-    "build:frontend": "npm --prefix frontend run build",
-    "docker:build": "docker compose build",
-    "docker:up": "docker compose up -d",
-    "docker:down": "docker compose down",
-    "docker:logs": "docker compose logs -f",
-    "deploy:remote": "./scripts/docker-deploy.sh --dev --build",
-    "deploy:remote:ssh": "./scripts/docker-deploy.sh --prod --build",
-    "deploy:remote:ssh:nobuild": "./scripts/docker-deploy.sh --prod --no-build",
-    "deploy:remote:ssh:frontend": "./scripts/docker-deploy.sh --prod --build --frontend-only",
-    "deploy:remote:ssh:api": "./scripts/docker-deploy.sh --prod --build --api-only",
-    "deploy": "npm run deploy:remote:ssh"
-  },
-  "devDependencies": {
-    "concurrently": "^9.2.1"
+    "test": "npm -w api run test && npm -w frontend run test",
+    "test:api": "npm -w api run test",
+    "test:frontend": "npm -w frontend run test",
+    "test:coverage": "npm -w api run test:coverage && npm -w frontend run test:coverage"
   }
 }
