@@ -26,6 +26,19 @@ import KnowledgeSourceFactory from './KnowledgeSource.js';
 import KnowledgeDocumentFactory from './KnowledgeDocument.js';
 import KnowledgeChunkFactory from './KnowledgeChunk.js';
 import IntegrationEventFactory from './IntegrationEvent.js';
+import LearnerProfileFactory from './LearnerProfile.js';
+import LearningGoalFactory from './LearningGoal.js';
+import LearningStyleProfileFactory from './LearningStyleProfile.js';
+import JourneyPlanFactory from './JourneyPlan.js';
+import JourneyPlanStepFactory from './JourneyPlanStep.js';
+import JourneyStateFactory from './JourneyState.js';
+import ScenarioFactory from './Scenario.js';
+import ScenarioEpisodeFactory from './ScenarioEpisode.js';
+import DecisionOptionFactory from './DecisionOption.js';
+import SimulationRunFactory from './SimulationRun.js';
+import DecisionLogFactory from './DecisionLog.js';
+import CompetencyEvidenceFactory from './CompetencyEvidence.js';
+import AssessmentSubmissionFactory from './AssessmentSubmission.js';
 
 export const Tenant = TenantFactory(sequelize);
 export const Role = RoleFactory(sequelize);
@@ -54,6 +67,19 @@ export const KnowledgeSource = KnowledgeSourceFactory(sequelize);
 export const KnowledgeDocument = KnowledgeDocumentFactory(sequelize);
 export const KnowledgeChunk = KnowledgeChunkFactory(sequelize);
 export const IntegrationEvent = IntegrationEventFactory(sequelize);
+export const LearnerProfile = LearnerProfileFactory(sequelize);
+export const LearningGoal = LearningGoalFactory(sequelize);
+export const LearningStyleProfile = LearningStyleProfileFactory(sequelize);
+export const JourneyPlan = JourneyPlanFactory(sequelize);
+export const JourneyPlanStep = JourneyPlanStepFactory(sequelize);
+export const JourneyState = JourneyStateFactory(sequelize);
+export const Scenario = ScenarioFactory(sequelize);
+export const ScenarioEpisode = ScenarioEpisodeFactory(sequelize);
+export const DecisionOption = DecisionOptionFactory(sequelize);
+export const SimulationRun = SimulationRunFactory(sequelize);
+export const DecisionLog = DecisionLogFactory(sequelize);
+export const CompetencyEvidence = CompetencyEvidenceFactory(sequelize);
+export const AssessmentSubmission = AssessmentSubmissionFactory(sequelize);
 
 TenantUser.belongsTo(User, { as: 'user', foreignKey: 'userId' });
 TenantUser.belongsTo(Tenant, { as: 'tenant', foreignKey: 'tenantId' });
@@ -75,5 +101,53 @@ KnowledgeSource.hasMany(KnowledgeDocument, { as: 'documents', foreignKey: 'knowl
 KnowledgeDocument.belongsTo(KnowledgeSource, { as: 'source', foreignKey: 'knowledgeSourceId' });
 KnowledgeDocument.hasMany(KnowledgeChunk, { as: 'chunks', foreignKey: 'knowledgeDocumentId' });
 AISession.hasMany(AIMessage, { as: 'messages', foreignKey: 'aiSessionId' });
+User.hasOne(LearnerProfile, { as: 'learnerProfile', foreignKey: 'userId' });
+User.hasMany(LearningGoal, { as: 'learningGoals', foreignKey: 'userId' });
+User.hasOne(LearningStyleProfile, { as: 'learningStyleProfile', foreignKey: 'userId' });
+User.hasMany(JourneyPlan, { as: 'journeyPlans', foreignKey: 'userId' });
+User.hasOne(JourneyState, { as: 'journeyState', foreignKey: 'userId' });
+User.hasMany(SimulationRun, { as: 'simulationRuns', foreignKey: 'userId' });
+User.hasMany(CompetencyEvidence, { as: 'competencyEvidences', foreignKey: 'userId' });
+User.hasMany(AssessmentSubmission, { as: 'assessmentSubmissions', foreignKey: 'userId' });
+
+LearningGoal.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+LearningStyleProfile.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+LearnerProfile.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+
+JourneyPlan.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+JourneyPlan.belongsTo(LearningGoal, { as: 'learningGoal', foreignKey: 'learningGoalId' });
+JourneyPlan.hasMany(JourneyPlanStep, { as: 'steps', foreignKey: 'journeyPlanId' });
+JourneyPlanStep.belongsTo(JourneyPlan, { as: 'journeyPlan', foreignKey: 'journeyPlanId' });
+JourneyPlanStep.belongsTo(Competency, { as: 'competency', foreignKey: 'competencyId' });
+JourneyPlanStep.belongsTo(Lesson, { as: 'lesson', foreignKey: 'lessonId' });
+
+JourneyState.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+JourneyState.belongsTo(JourneyPlan, { as: 'journeyPlan', foreignKey: 'journeyPlanId' });
+JourneyState.belongsTo(JourneyPlanStep, { as: 'currentStep', foreignKey: 'currentStepId' });
+
+Scenario.belongsTo(Competency, { as: 'competency', foreignKey: 'competencyId' });
+Scenario.belongsTo(LearningTrack, { as: 'track', foreignKey: 'learningTrackId' });
+Scenario.belongsTo(Course, { as: 'course', foreignKey: 'courseId' });
+Scenario.belongsTo(Lesson, { as: 'lesson', foreignKey: 'lessonId' });
+Scenario.hasMany(ScenarioEpisode, { as: 'episodes', foreignKey: 'scenarioId' });
+
+ScenarioEpisode.belongsTo(Scenario, { as: 'scenario', foreignKey: 'scenarioId' });
+ScenarioEpisode.hasMany(DecisionOption, { as: 'options', foreignKey: 'scenarioEpisodeId' });
+DecisionOption.belongsTo(ScenarioEpisode, { as: 'episode', foreignKey: 'scenarioEpisodeId' });
+
+SimulationRun.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+SimulationRun.belongsTo(Scenario, { as: 'scenario', foreignKey: 'scenarioId' });
+SimulationRun.belongsTo(JourneyPlan, { as: 'journeyPlan', foreignKey: 'journeyPlanId' });
+SimulationRun.hasMany(DecisionLog, { as: 'decisionLogs', foreignKey: 'simulationRunId' });
+
+DecisionLog.belongsTo(SimulationRun, { as: 'simulationRun', foreignKey: 'simulationRunId' });
+DecisionLog.belongsTo(ScenarioEpisode, { as: 'episode', foreignKey: 'scenarioEpisodeId' });
+DecisionLog.belongsTo(DecisionOption, { as: 'option', foreignKey: 'decisionOptionId' });
+
+CompetencyEvidence.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+CompetencyEvidence.belongsTo(Competency, { as: 'competency', foreignKey: 'competencyId' });
+AssessmentSubmission.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+AssessmentSubmission.belongsTo(Assessment, { as: 'assessment', foreignKey: 'assessmentId' });
+AssessmentSubmission.belongsTo(AssessmentAttempt, { as: 'attempt', foreignKey: 'assessmentAttemptId' });
 
 export { sequelize };

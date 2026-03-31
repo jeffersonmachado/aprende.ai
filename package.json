@@ -1,11 +1,25 @@
 {
-  "name": "aprende-ai-workspace",
+  "name": "aprende-ai",
   "private": true,
-  "workspaces": ["api", "frontend"],
   "scripts": {
-    "test": "npm -w api run test && npm -w frontend run test",
-    "test:api": "npm -w api run test",
-    "test:frontend": "npm -w frontend run test",
-    "test:coverage": "npm -w api run test:coverage && npm -w frontend run test:coverage"
+    "dev": "bash ./scripts/start-dev.sh",
+    "dev:api": "bash ./scripts/start-dev-nodemon.sh",
+    "dev:api-only": "npm --prefix api run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "deploy": "bash ./scripts/deploy.sh",
+    "deploy:help": "bash ./scripts/docker-deploy.sh --help",
+    "deploy:prod": "bash ./scripts/docker-deploy.sh --prod --build",
+    "deploy:prod:no-build": "bash ./scripts/docker-deploy.sh --prod --no-build",
+    "deploy:dev": "bash ./scripts/docker-deploy.sh --dev --build",
+    "deploy:api": "bash ./scripts/docker-deploy.sh --prod --build --api-only",
+    "deploy:frontend": "bash ./scripts/docker-deploy.sh --prod --build --frontend-only",
+    "zip": "bash ./scripts/generate-zip.sh",
+    "zip:all": "bash ./scripts/generate-zip.sh --include-node-modules --include-coverage --include-dist",
+    "zip:api": "bash ./scripts/generate-zip.sh -i 'api/**' -i 'package.json' -i 'package-lock.json' -n api-only.zip",
+    "zip:frontend": "bash ./scripts/generate-zip.sh -i 'frontend/**' -i 'package.json' -i 'package-lock.json' -n frontend-only.zip",
+    "test": "npm --prefix api run test && npm --prefix frontend run test",
+    "test:api": "npm --prefix api run test",
+    "test:frontend": "npm --prefix frontend run test",
+    "test:coverage": "npm --prefix api run test:coverage && npm --prefix frontend run test:coverage"
   }
 }

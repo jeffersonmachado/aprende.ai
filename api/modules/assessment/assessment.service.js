@@ -1,6 +1,15 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Assessment, AssessmentAttempt, AssessmentAnswer, AssessmentEvaluation, AssessmentQuestion } from '../../db/models/index.js';
+import {
+  Assessment,
+  AssessmentAnswer,
+  AssessmentAttempt,
+  AssessmentEvaluation,
+  AssessmentQuestion,
+  AssessmentSubmission,
+  CompetencyEvidence
+} from '../../db/models/index.js';
 import { AppError } from '../../core/errors/AppError.js';
+import { chatCompletion } from '../../core/ai/chatCompletion.js';
 export async function listAssessments(tenantId) { return Assessment.findAll({ where: { tenantId }, order: [['createdAt', 'DESC']] }); }
 export async function getAssessment(tenantId, id) {
   const assessment = await Assessment.findOne({ where: { tenantId, id }, include: [{ model: AssessmentQuestion, as: 'questions' }] });
@@ -14,6 +23,149 @@ export async function submitAttempt(tenantId, attemptId, answers = []) {
   for (const item of answers) {
     await AssessmentAnswer.create({ id: uuidv4(), attemptId, questionId: item.questionId, answerText: item.answerText || null, answerJson: item.answerJson || null });
   }
-  await AssessmentEvaluation.create({ id: uuidv4(), tenantId, attemptId, evaluatorType: 'ai', modelName: 'pending', overallScore: 0, summaryFeedback: 'Avaliação registrada. A etapa de IA ainda será conectada ao motor final.', detailedFeedbackJson: { status: 'queued' } });
-  attempt.status = 'submitted'; attempt.submittedAt = new Date(); attempt.evaluationStatus = 'completed'; attempt.finalScore = 0; await attempt.save(); return attempt;
+
+  const aiResult = await evaluateSubmissionWithAI({
+    tenantId,
+    userId: attempt.userId,
+    assessmentId: attempt.assessmentId,
+    answers
+  });
+
+  await AssessmentEvaluation.create({
+    id: uuidv4(),
+    tenantId,
+    attemptId,
+    evaluatorType: 'ai',
+    modelName: aiResult.model,
+    overallScore: aiResult.score,
+    summaryFeedback: aiResult.feedback,
+    detailedFeedbackJson: {
+      recommendation: aiResult.recommendation,
+      nextStep: aiResult.nextStepSuggestion
+    }
+  });
+
+  await AssessmentSubmission.create({
+    id: uuidv4(),
+    tenantId,
+    userId: attempt.userId,
+    assessmentId: attempt.assessmentId,
+    assessmentAttemptId: attempt.id,
+    submissionText: JSON.stringify(answers),
+    submissionJson: { answers },
+    aiScore: aiResult.score,
+    aiFeedback: aiResult.feedback,
+    recommendation: aiResult.recommendation,
+    nextStepSuggestion: aiResult.nextStepSuggestion
+  });
+
+  await CompetencyEvidence.create({
+    id: uuidv4(),
+    tenantId,
+    userId: attempt.userId,
+    competencyId: null,
+    sourceType: 'assessment',
+    sourceId: attempt.id,
+    evidenceText: aiResult.feedback,
+    score: aiResult.score,
+    metadata: {
+      recommendation: aiResult.recommendation,
+      nextStepSuggestion: aiResult.nextStepSuggestion
+    }
+  });
+
+  attempt.status = 'submitted';
+  attempt.submittedAt = new Date();
+  attempt.evaluationStatus = 'completed';
+  attempt.finalScore = aiResult.score;
+  await attempt.save();
+
+  return {
+    attempt,
+    evaluation: aiResult
+  };
+}
+
+export async function evaluateSubmissionWithAI({ tenantId, userId, assessmentId, answers }) {
+  const prompt = [
+    `Tenant: ${tenantId}`,
+    `Usuário: ${userId}`,
+    `Assessment: ${assessmentId || 'n/a'}`,
+    'Respostas do aprendiz:',
+    JSON.stringify(answers, null, 2),
+    'Avalie de 0 a 10 e responda em JSON com as chaves: score, feedback, recommendation, nextStepSuggestion.'
+  ].join('\n');
+
+  const completion = await chatCompletion({
+    systemPrompt: 'Você é avaliador pedagógico do aprende.ai. Responda apenas JSON válido.',
+    userPrompt: prompt,
+    temperature: 0.2,
+    maxTokens: 500
+  });
+
+  let parsed;
+  try {
+    parsed = JSON.parse(completion.text);
+  } catch {
+    parsed = {
+      score: 6,
+      feedback: completion.text,
+      recommendation: 'Revisar fundamentos e praticar mais um cenário.',
+      nextStepSuggestion: 'Executar uma simulação de reforço.'
+    };
+  }
+
+  return {
+    model: completion.model,
+    score: Number(parsed.score || 0),
+    feedback: parsed.feedback || 'Feedback não retornado pela IA.',
+    recommendation: parsed.recommendation || 'Sem recomendação específica.',
+    nextStepSuggestion: parsed.nextStepSuggestion || 'Seguir para o próximo passo da jornada.'
+  };
+}
+
+export async function evaluateAssessment(tenantId, userId, payload) {
+  const result = await evaluateSubmissionWithAI({
+    tenantId,
+    userId,
+    assessmentId: payload.assessmentId || null,
+    answers: payload.answers || []
+  });
+
+  const submission = await AssessmentSubmission.create({
+    id: uuidv4(),
+    tenantId,
+    userId,
+    assessmentId: payload.assessmentId || null,
+    assessmentAttemptId: null,
+    submissionText: payload.textAnswer || null,
+    submissionJson: payload,
+    aiScore: result.score,
+    aiFeedback: result.feedback,
+    recommendation: result.recommendation,
+    nextStepSuggestion: result.nextStepSuggestion
+  });
+
+  await CompetencyEvidence.create({
+    id: uuidv4(),
+    tenantId,
+    userId,
+    competencyId: payload.competencyId || null,
+    sourceType: 'assessment',
+    sourceId: submission.id,
+    evidenceText: result.feedback,
+    score: result.score,
+    metadata: {
+      recommendation: result.recommendation,
+      nextStepSuggestion: result.nextStepSuggestion
+    }
+  });
+
+  return {
+    score: result.score,
+    feedback: result.feedback,
+    recommendation: result.recommendation,
+    nextStepSuggestion: result.nextStepSuggestion,
+    submissionId: submission.id
+  };
 }

@@ -6,7 +6,8 @@ export const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: Number(process.env.PORT || 3015),
   jwtSecret: process.env.JWT_SECRET || 'aprende_ai_dev_secret',
-  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5174',
+  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5176',
+  migrationsStrict: process.env.DB_MIGRATIONS_STRICT === 'true',
   db: {
     host: process.env.DB_HOST || 'localhost',
     port: Number(process.env.DB_PORT || 5432),

@@ -6,6 +6,13 @@ import competencyRoutes from './competency/competency.routes.js';
 import aiRoutes from './ai/ai.routes.js';
 import knowledgeRoutes from './knowledge/knowledge.routes.js';
 import integrationRoutes from './integration/integration.routes.js';
+import profileRoutes from './profile/profile.routes.js';
+import journeyRoutes from './journey/journey.routes.js';
+import simulationRoutes from './simulation/simulation.routes.js';
+import mentorRoutes from './mentor/mentor.routes.js';
+import analyticsRoutes from './analytics/analytics.routes.js';
+import feedbackRoutes from './feedback/feedback.routes.js';
+import journeyFlowRoutes from './journey-flow/journey-flow.routes.js';
 
 export function registerModules(app) {
   app.use(systemRoutes);
@@ -17,4 +24,11 @@ export function registerModules(app) {
   app.use('/api', aiRoutes);
   app.use('/api', knowledgeRoutes);
   app.use('/api', integrationRoutes);
+  app.use('/api', profileRoutes);
+  app.use('/api', journeyRoutes);
+  app.use('/api', simulationRoutes);
+  app.use('/api', mentorRoutes);
+  app.use('/api', analyticsRoutes);
+  app.use('/api', feedbackRoutes);
+  app.use('/api', journeyFlowRoutes);
 }

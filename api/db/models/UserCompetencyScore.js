@@ -7,6 +7,8 @@ export default (sequelize) => {
     userId: { type: DataTypes.UUID, allowNull: false, field: 'user_id' },
     competencyId: { type: DataTypes.UUID, allowNull: false, field: 'competency_id' },
     score: { type: DataTypes.DECIMAL(5,2), allowNull: false, defaultValue: 0 },
+    level: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'iniciante' },
+    evidencesJson: { type: DataTypes.JSONB, allowNull: true, field: 'evidences_json' },
     evidenceCount: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0, field: 'evidence_count' },
     lastEvaluatedAt: { type: DataTypes.DATE, allowNull: true, field: 'last_evaluated_at' }
   }, {

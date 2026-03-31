@@ -28,6 +28,7 @@ describe('config env', () => {
     delete process.env.DB_USER;
     delete process.env.DB_PASSWORD;
     delete process.env.DB_LOGGING;
+    delete process.env.DB_MIGRATIONS_STRICT;
 
     const { env } = await import('../config/env.js');
 
@@ -35,7 +36,8 @@ describe('config env', () => {
       nodeEnv: 'development',
       port: 3015,
       jwtSecret: 'aprende_ai_dev_secret',
-      corsOrigin: 'http://localhost:5174',
+      migrationsStrict: false,
+      corsOrigin: 'http://localhost:5176',
       db: {
         host: 'localhost',
         port: 5432,
@@ -58,6 +60,7 @@ describe('config env', () => {
     process.env.DB_USER = 'app_user';
     process.env.DB_PASSWORD = 'senha_segura';
     process.env.DB_LOGGING = 'true';
+    process.env.DB_MIGRATIONS_STRICT = 'true';
 
     const { env } = await import('../config/env.js');
 
@@ -65,6 +68,7 @@ describe('config env', () => {
       nodeEnv: 'production',
       port: 4100,
       jwtSecret: 'segredo-real',
+      migrationsStrict: true,
       corsOrigin: 'https://aprende.ai',
       db: {
         host: 'db.internal',

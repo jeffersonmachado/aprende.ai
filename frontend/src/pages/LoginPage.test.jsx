@@ -6,7 +6,7 @@ const loginMock = vi.fn();
 const navigateMock = vi.fn();
 const routerFuture = { v7_startTransition: true, v7_relativeSplatPath: true };
 
-vi.mock('../context/AuthContext.jsx', () => ({
+vi.mock('../context/useAuth.js', () => ({
   useAuth: () => ({ login: (...args) => loginMock(...args) })
 }));
 

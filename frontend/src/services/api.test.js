@@ -27,6 +27,7 @@ describe('services/api', () => {
     const [url, options] = global.fetch.mock.calls[0];
     expect(url).toContain('/health');
     expect(options.headers['Content-Type']).toBe('application/json');
+    expect(options.headers['x-tenant-slug']).toBe('demo');
     expect(result).toEqual({ ok: true, items: [1, 2] });
   });
 

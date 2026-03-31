@@ -9,6 +9,11 @@ const routerBasename = import.meta.env.BASE_URL === '/'
   ? undefined
   : import.meta.env.BASE_URL.replace(/\/$/, '');
 
+const routerFuture = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true
+};
+
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode><BrowserRouter basename={routerBasename}><AuthProvider><App /></AuthProvider></BrowserRouter></React.StrictMode>
+  <React.StrictMode><BrowserRouter basename={routerBasename} future={routerFuture}><AuthProvider><App /></AuthProvider></BrowserRouter></React.StrictMode>
 );

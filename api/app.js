@@ -10,7 +10,11 @@ import { registerModules } from './modules/index.js';
 
 export function createApp() {
   const app = express();
-  app.use(cors({ origin: env.corsOrigin }));
+  app.use(cors({
+    origin: env.corsOrigin,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-slug']
+  }));
   app.use(express.json({ limit: '2mb' }));
   app.use((req, res, next) => {
     if (req.path === '/health') return next();
