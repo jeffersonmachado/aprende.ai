@@ -59,8 +59,8 @@ describe('CompetenciesPage', () => {
     render(<CompetenciesPage />);
 
     expect(await screen.findByText('Competência sem extras')).toBeInTheDocument();
-    expect(screen.getByText('sem categoria')).toBeInTheDocument();
-    expect(screen.getByText('sem código')).toBeInTheDocument();
+    expect(screen.getByText(/Tipo:\s*comportamental/i)).toBeInTheDocument();
+    expect(screen.getByText('sem codigo')).toBeInTheDocument();
     expect(screen.getByText('Sem descrição.')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Salvar competência' }));

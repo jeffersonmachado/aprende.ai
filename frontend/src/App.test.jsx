@@ -5,7 +5,7 @@ import { vi } from 'vitest';
 let authToken = null;
 const routerFuture = { v7_startTransition: true, v7_relativeSplatPath: true };
 
-vi.mock('./context/AuthContext.jsx', () => ({
+vi.mock('./context/useAuth.js', () => ({
   useAuth: () => ({
     token: authToken
   })
@@ -28,6 +28,10 @@ vi.mock('./pages/DashboardPage.jsx', () => ({
   default: () => <div>Mock Dashboard</div>
 }));
 
+vi.mock('./pages/TechnicalDashboardPage.jsx', () => ({
+  default: () => <div>Mock Technical Dashboard</div>
+}));
+
 vi.mock('./pages/TracksPage.jsx', () => ({
   default: () => <div>Mock Tracks</div>
 }));
@@ -44,6 +48,10 @@ vi.mock('./pages/IntegrationPage.jsx', () => ({
   default: () => <div>Mock Integration</div>
 }));
 
+vi.mock('./features/journey-flow/JourneyFlowPage.jsx', () => ({
+  default: () => <div>Mock Journey Flow</div>
+}));
+
 import App from './App.jsx';
 
 describe('App', () => {
@@ -58,7 +66,7 @@ describe('App', () => {
     expect(await screen.findByText('Mock Login')).toBeInTheDocument();
   });
 
-  test('renderiza rota protegida com layout e dashboard', async () => {
+  test('renderiza rota protegida com layout e jornada por padrao', async () => {
     authToken = 'token-valido';
     render(
       <MemoryRouter initialEntries={['/']} future={routerFuture}>
@@ -67,7 +75,7 @@ describe('App', () => {
     );
 
     expect(await screen.findByText('Mock Layout')).toBeInTheDocument();
-    expect(screen.getByText('Mock Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Mock Journey Flow')).toBeInTheDocument();
   });
 
   test('renderiza rota de trilhas quando autenticado', async () => {

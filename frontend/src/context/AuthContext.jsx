@@ -1,11 +1,11 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api, setAuthToken, setUnauthorizedHandler } from '../services/api.js';
-
-const AuthContext = createContext(null);
+import { AuthContext } from './auth-context.js';
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(localStorage.getItem('aprende_ai_token'));
   const [user, setUser] = useState(null);
+  const [sessionNotice, setSessionNotice] = useState('');
 
   useEffect(() => {
     setAuthToken(token);
@@ -16,8 +16,15 @@ export function AuthProvider({ children }) {
       localStorage.removeItem('aprende_ai_token');
       setToken(null);
       setUser(null);
+      setSessionNotice('Sua sessao expirou. Faca login novamente para continuar a jornada.');
     });
   }, []);
+
+  useEffect(() => {
+    if (!sessionNotice) return undefined;
+    const timeoutId = window.setTimeout(() => setSessionNotice(''), 5000);
+    return () => window.clearTimeout(timeoutId);
+  }, [sessionNotice]);
 
   useEffect(() => {
     async function bootstrap() {
@@ -53,13 +60,15 @@ export function AuthProvider({ children }) {
 
   const value = useMemo(() => ({ token, user, login, logout }), [token, user]);
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth precisa ser utilizado dentro de AuthProvider');
-  }
-  return context;
+  return (
+    <>
+      <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+      {sessionNotice ? (
+        <div className="session-toast" role="status" aria-live="polite">
+          <span>{sessionNotice}</span>
+          <button type="button" className="secondary-button" onClick={() => setSessionNotice('')}>Fechar</button>
+        </div>
+      ) : null}
+    </>
+  );
 }

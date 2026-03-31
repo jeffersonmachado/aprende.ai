@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Card from '../components/Card.jsx';
 import EmptyState from '../components/EmptyState.jsx';
+import { CompetencyMeter, JourneySummaryCard } from '../components/DomainComponents.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import { api } from '../services/api.js';
 
@@ -34,9 +35,9 @@ export default function CompetenciesPage() {
   return (
     <div className="page-stack">
       <PageHeader
-        eyebrow="Competências"
+        eyebrow="Estrutura"
         title="Mapa inicial de habilidades"
-        description="Camada importante para avaliação, recomendação adaptativa e integração futura com dados operacionais do r-agent2."
+        description="Cada competencia apresenta tipo, dimensoes, peso e exemplos de evidencia para guiar a evolucao na jornada."
       />
 
       <div className="grid-two">
@@ -67,14 +68,18 @@ export default function CompetenciesPage() {
           {competencies.length ? (
             <div className="list">
               {competencies.map((item) => (
-                <div className="list-item" key={item.id}>
+                <JourneySummaryCard key={item.id} title={item.name}>
                   <div className="row-between gap-sm wrap">
-                    <strong>{item.name}</strong>
-                    <span className="muted-text">{item.category || 'sem categoria'}</span>
+                    <span className="muted-text">Tipo: {item.category || 'comportamental'}</span>
+                    <span className="muted-text">Peso: 0.6</span>
                   </div>
-                  <span>{item.code || 'sem código'}</span>
+                  <span>{item.code || 'sem codigo'}</span>
                   <p>{item.description || 'Sem descrição.'}</p>
-                </div>
+                  <p>Dimensoes: clareza de criterio, qualidade de execucao, consistencia sob pressao.</p>
+                  <p>Evidencias tipicas: racional da escolha, impacto medido e revisao de proximo passo.</p>
+                  <p>Impacto na jornada: acelera recomendacoes e define foco de reforco pedagogico.</p>
+                  <CompetencyMeter label="Maturidade estimada" value={58} baseline={42} />
+                </JourneySummaryCard>
               ))}
             </div>
           ) : (

@@ -2,91 +2,111 @@ import { useEffect, useMemo, useState } from 'react';
 import Card from '../components/Card.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import StatCard from '../components/StatCard.jsx';
-import StatusPill from '../components/StatusPill.jsx';
 import EmptyState from '../components/EmptyState.jsx';
-import { api } from '../services/api.js';
+import SkeletonBlock from '../components/SkeletonBlock.jsx';
+import { RewardPill, CompetencyMeter, JourneySummaryCard } from '../components/DomainComponents.jsx';
+import { getJourneySummary } from '../services/journeyApi.js';
+import { getEvolution } from '../services/simulationApi.js';
 
 export default function DashboardPage() {
-  const [tracks, setTracks] = useState([]);
-  const [competencies, setCompetencies] = useState([]);
-  const [documents, setDocuments] = useState([]);
-  const [events, setEvents] = useState([]);
+  const [journey, setJourney] = useState(null);
+  const [evolution, setEvolution] = useState(null);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      api.get('/api/tracks'),
-      api.get('/api/competencies'),
-      api.get('/api/knowledge/documents'),
-      api.get('/api/integration/events')
-    ])
-      .then(([tracksData, competencyData, documentData, eventData]) => {
-        setTracks(tracksData);
-        setCompetencies(competencyData);
-        setDocuments(documentData);
-        setEvents(eventData);
+    Promise.all([getJourneySummary(), getEvolution()])
+      .then(([journeyData, evolutionData]) => {
+        setJourney(journeyData);
+        setEvolution(evolutionData);
       })
-      .catch((err) => setError(err.message));
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
   }, []);
 
-  const latestEvents = useMemo(() => events.slice(0, 5), [events]);
+  const journeyCompetencies = useMemo(() => evolution?.competencies || [], [evolution]);
+  const lastDecision = useMemo(() => evolution?.decisionHistory?.[0], [evolution]);
+
+  const rewards = useMemo(() => {
+    const xp = Math.round(Number(evolution?.progression?.progressPercent || 0) * 8);
+    const streak = Math.max(1, Math.min(30, evolution?.decisionHistory?.length || 1));
+    const badges = journey?.adaptive?.scenarios?.length ? 'Analista de Cenarios' : 'Primeiro Ciclo';
+    return { xp, streak, badges };
+  }, [evolution, journey]);
 
   return (
     <div className="page-stack">
       <PageHeader
-        eyebrow="Produto"
-        title="Dashboard do aprende.AI"
-        description="Base inicial do projeto próprio, com front em Vite e backend modular em Sequelize, pronta para evoluir e integrar com o r-agent2."
+        eyebrow="Experiencia"
+        title="Seu dashboard de aprendizagem"
+        description="Acompanhe progresso da jornada, competencias em evolucao e sua proxima melhor decisao com backend como autoridade oficial do estado."
       />
 
       {error ? <div className="error-box">{error}</div> : null}
 
-      <div className="stats-grid">
-        <StatCard label="Trilhas" value={tracks.length} helper="Catálogo de aprendizagem" />
-        <StatCard label="Competências" value={competencies.length} helper="Mapa inicial de habilidades" />
-        <StatCard label="Documentos" value={documents.length} helper="Base para RAG" />
-        <StatCard label="Eventos" value={events.length} helper="Integração com o ecossistema" />
-      </div>
+      {loading ? (
+        <div className="stats-grid">
+          <SkeletonBlock className="card skeleton-stat" />
+          <SkeletonBlock className="card skeleton-stat" />
+          <SkeletonBlock className="card skeleton-stat" />
+          <SkeletonBlock className="card skeleton-stat" />
+        </div>
+      ) : (
+        <div className="stats-grid">
+          <StatCard label="Progresso" value={`${Number(evolution?.progression?.progressPercent || 0).toFixed(0)}%`} helper="Jornada atual" />
+          <StatCard label="Competencias" value={journeyCompetencies.length} helper="Em desenvolvimento" />
+          <StatCard label="Ultima simulacao" value={lastDecision ? 'Concluida' : 'Pendente'} helper="Estado da missao" />
+          <StatCard label="Proxima recomendacao" value={evolution?.progression?.adaptiveDifficulty || 'medium'} helper="Dificuldade sugerida" />
+        </div>
+      )}
 
       <div className="grid-two">
-        <Card title="Princípios desta versão">
-          <div className="list compact-list">
-            <div className="list-item">
-              <strong>Projeto separado</strong>
-              <p>O domínio educacional não fica acoplado ao núcleo operacional do r-agent2.</p>
-            </div>
-            <div className="list-item">
-              <strong>Mesmo padrão técnico</strong>
-              <p>Sequelize, migrations, seed, organização modular e multi-tenant por tenant slug.</p>
-            </div>
-            <div className="list-item">
-              <strong>Integração preparada</strong>
-              <p>O módulo de eventos já está pronto para receber e publicar sinais do r-agent2.</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card title="Últimos eventos de integração">
-          {latestEvents.length ? (
+        <Card title="Competencias em evolucao">
+          {journeyCompetencies.length ? (
             <div className="list compact-list">
-              {latestEvents.map((event) => (
-                <div className="list-item" key={event.id}>
-                  <div className="row-between">
-                    <strong>{event.eventType}</strong>
-                    <StatusPill value={event.status} />
-                  </div>
-                  <span>{event.sourceSystem} · {event.direction}</span>
-                </div>
+              {journeyCompetencies.map((score) => (
+                <CompetencyMeter
+                  key={score.id}
+                  label={score.competencyId}
+                  value={Number(score.score || 0)}
+                />
               ))}
             </div>
           ) : (
             <EmptyState
-              title="Sem eventos ainda"
-              description="Publique um evento na área de integração para validar o fluxo inicial com o ecossistema."
+              title="Sem evolução registrada"
+              description="Conclua a etapa inicial da jornada e execute uma simulacao para liberar os indicadores de competencia."
             />
           )}
         </Card>
+
+        <Card title="Resumo de perfil e objetivo">
+          <div className="list compact-list">
+            <JourneySummaryCard title="Perfil atual">
+              <p>{journey?.adaptive?.persona || 'Perfil em calibracao'}</p>
+            </JourneySummaryCard>
+            <JourneySummaryCard title="Objetivo da jornada">
+              <p>{journey?.adaptive?.goal || 'Definir objetivo principal'}</p>
+            </JourneySummaryCard>
+            <JourneySummaryCard title="Proxima acao recomendada">
+              <p>{evolution?.progression?.nextRecommendation?.focus || 'Aguardando primeira decisao'}</p>
+            </JourneySummaryCard>
+          </div>
+        </Card>
       </div>
+
+      <Card title="Progresso gamificado com sobriedade">
+        <div className="inline-pills">
+          <RewardPill label="XP" value={rewards.xp} />
+          <RewardPill label="Streak" value={`${rewards.streak} dias`} />
+          <RewardPill label="Badge" value={rewards.badges} />
+        </div>
+        <div className="list-item">
+          <strong>{evolution?.progression?.nextRecommendation?.focus || 'Aguardando diagnostico'}</strong>
+          <p>Dificuldade sugerida: {evolution?.progression?.nextRecommendation?.difficulty || 'medium'}</p>
+          <p>{evolution?.progression?.nextRecommendation?.rationale || 'A recomendacao aparece apos novas decisoes em simulacao.'}</p>
+        </div>
+      </Card>
     </div>
   );
 }

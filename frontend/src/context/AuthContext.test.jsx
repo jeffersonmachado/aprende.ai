@@ -15,7 +15,8 @@ vi.mock('../services/api.js', () => ({
   setUnauthorizedHandler: (...args) => setUnauthorizedHandlerMock(...args)
 }));
 
-import { AuthProvider, useAuth } from './AuthContext.jsx';
+import { AuthProvider } from './AuthContext.jsx';
+import { useAuth } from './useAuth.js';
 
 function Consumer() {
   const { token, user, login, logout } = useAuth();
@@ -126,6 +127,7 @@ describe('AuthContext', () => {
       unauthorizedCallback();
     });
 
+    expect(screen.getByText('Sua sessao expirou. Faca login novamente para continuar a jornada.')).toBeInTheDocument();
     await waitFor(() => expect(screen.getByTestId('token').textContent).toBe(''));
     expect(screen.getByTestId('user').textContent).toBe('');
     expect(localStorage.getItem('aprende_ai_token')).toBeNull();

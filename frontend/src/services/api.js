@@ -1,11 +1,26 @@
 const API_BASE = __API_BASE__;
+const DEFAULT_TENANT_SLUG = (import.meta.env.VITE_TENANT_SLUG || 'demo').trim();
 
-let authToken = null;
+let authToken = typeof window !== 'undefined'
+  ? window.localStorage.getItem('aprende_ai_token')
+  : null;
 let unauthorizedHandler = null;
+
+function buildUrl(path) {
+  const normalizedBase = API_BASE.replace(/\/$/, '');
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+
+  if (normalizedBase.endsWith('/api') && normalizedPath.startsWith('/api/')) {
+    return `${normalizedBase}${normalizedPath.slice(4)}`;
+  }
+
+  return `${normalizedBase}${normalizedPath}`;
+}
 
 async function request(path, options = {}) {
   const headers = {
     'Content-Type': 'application/json',
+    'x-tenant-slug': DEFAULT_TENANT_SLUG,
     ...(options.headers || {})
   };
 
@@ -13,7 +28,7 @@ async function request(path, options = {}) {
     headers.Authorization = `Bearer ${authToken}`;
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(buildUrl(path), {
     headers,
     ...options
   });
@@ -23,6 +38,9 @@ async function request(path, options = {}) {
   }
 
   if (!res.ok) {
+    if (res.status === 401) {
+      throw new Error('Não autorizado. Sessao expirada ou nao autorizada. Faca login novamente.');
+    }
     const text = await res.text();
     throw new Error(text || 'Erro na requisição');
   }

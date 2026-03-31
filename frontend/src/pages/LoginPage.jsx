@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.jsx';
+import { useAuth } from '../context/useAuth.js';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -24,15 +24,15 @@ export default function LoginPage() {
       <div className="login-panel">
         <div className="login-hero">
           <div className="page-eyebrow">aprende.AI</div>
-          <h1>Projeto próprio, pronto para integrar</h1>
+          <h1>Aprenda tomando decisoes reais</h1>
           <p>
-            Frontend em React + Vite e backend em Node.js + Express + Sequelize,
-            mantendo o padrão do r-agent2, mas com domínio educacional separado.
+            Jornadas adaptativas com simulacoes, mentoria por IA e evolucao de competencias.
           </p>
           <ul>
-            <li>multi-tenant por tenant slug</li>
-            <li>JWT e seed demo</li>
-            <li>módulos de learning, assessment, ai, knowledge e integration</li>
+            <li>Cenarios praticos</li>
+            <li>Feedback contextual</li>
+            <li>Progresso acompanhado</li>
+            <li>Trilhas personalizadas</li>
           </ul>
         </div>
 

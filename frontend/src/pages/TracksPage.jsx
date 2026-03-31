@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Card from '../components/Card.jsx';
 import EmptyState from '../components/EmptyState.jsx';
+import { JourneySummaryCard, RewardPill } from '../components/DomainComponents.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import StatusPill from '../components/StatusPill.jsx';
 import { api } from '../services/api.js';
@@ -40,9 +41,9 @@ export default function TracksPage() {
   return (
     <div className="page-stack">
       <PageHeader
-        eyebrow="Learning"
+        eyebrow="Estrutura"
         title="Trilhas de aprendizagem"
-        description="Catálogo inicial do aprende.AI, com base pronta para cursos, módulos, lições e progresso."
+        description="Cada trilha comunica publico-alvo, dificuldade, competencias principais e indicacao de recomendacao."
       />
 
       <div className="grid-two">
@@ -79,16 +80,21 @@ export default function TracksPage() {
           {tracks.length ? (
             <div className="list">
               {tracks.map((track) => (
-                <div key={track.id} className="list-item">
+                <JourneySummaryCard key={track.id} title={track.title}>
                   <div className="row-between gap-sm wrap">
-                    <strong>{track.title}</strong>
                     <div className="inline-pills">
                       <StatusPill value={track.status} />
                       <StatusPill value={track.visibility} />
+                      <RewardPill label="Recomendacao" value={track.status === 'published' ? 'alta' : 'moderada'} />
                     </div>
                   </div>
                   <p>{track.description || 'Sem descrição.'}</p>
-                </div>
+                  <div className="inline-pills">
+                    <span className="reward-pill">Publico: gestores e profissionais</span>
+                    <span className="reward-pill">Dificuldade: media</span>
+                    <span className="reward-pill">Competencias: decisao e execucao</span>
+                  </div>
+                </JourneySummaryCard>
               ))}
             </div>
           ) : (

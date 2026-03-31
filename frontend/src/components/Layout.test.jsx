@@ -6,7 +6,7 @@ const logoutMock = vi.fn();
 let mockedUser = { name: 'Admin', email: 'admin@aprende.ai' };
 const routerFuture = { v7_startTransition: true, v7_relativeSplatPath: true };
 
-vi.mock('../context/AuthContext.jsx', () => ({
+vi.mock('../context/useAuth.js', () => ({
   useAuth: () => ({
     logout: (...args) => logoutMock(...args),
     user: mockedUser
@@ -40,8 +40,8 @@ describe('Layout', () => {
 
     expect(screen.getByText('Admin')).toBeInTheDocument();
     expect(screen.getByText('admin@aprende.ai')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Dashboard/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Trilhas/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /Minha Jornada/i }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByRole('link', { name: /Trilhas/i }).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Tracks content')).toBeInTheDocument();
   });
 
@@ -51,6 +51,7 @@ describe('Layout', () => {
 
     expect(screen.getByText('Usuário')).toBeInTheDocument();
     expect(screen.getByText('Knowledge content')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Dashboard tecnico/i })).not.toBeInTheDocument();
   });
 
   test('executa logout ao clicar em sair', () => {
@@ -61,10 +62,10 @@ describe('Layout', () => {
     expect(logoutMock).toHaveBeenCalledTimes(1);
   });
 
-  test('usa dashboard como módulo ativo quando rota não está mapeada', () => {
+  test('usa minha jornada como módulo ativo quando rota não está mapeada', () => {
     renderLayout('/rota-desconhecida');
 
     expect(screen.getByText('Fallback content')).toBeInTheDocument();
-    expect(screen.getAllByText('Dashboard').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('Minha Jornada').length).toBeGreaterThanOrEqual(1);
   });
 });
