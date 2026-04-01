@@ -1,56 +1,103 @@
 import { useEffect, useState } from 'react';
-import { CompetencyMeter, RewardPill } from '../../components/DomainComponents.jsx';
+import { CompetencyMeter } from '../../components/DomainComponents.jsx';
+import { Badge, ExperienceCard, Progress, StageWrapper } from '../../components';
 import { getEvolution } from '../../services/simulationApi.js';
+import { getGamificationLeaderboard, getMyGamificationSummary } from '../../services/gamificationApi.js';
 
 export default function EvolutionPage() {
   const [data, setData] = useState(null);
+  const [gamification, setGamification] = useState(null);
+  const [leaderboard, setLeaderboard] = useState([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    getEvolution()
-      .then(setData)
+    Promise.all([getEvolution(), getMyGamificationSummary(), getGamificationLeaderboard(5)])
+      .then(([evolutionData, gamificationData, leaderboardData]) => {
+        setData(evolutionData);
+        setGamification(gamificationData);
+        setLeaderboard(Array.isArray(leaderboardData) ? leaderboardData : []);
+      })
       .catch((err) => setError(err.message));
   }, []);
 
+  const progress = Number(data?.progression?.progressPercent || 0);
+
   return (
     <div className="page-stack">
-      <h2>Evolução</h2>
-      <p>Acompanhe competências, histórico de decisões e recomendações do próximo ciclo.</p>
+      <StageWrapper
+        stageKey="evolution"
+        title="Evolução"
+        subtitle="Acompanhe competências, histórico de decisões e recomendações do próximo ciclo."
+        completed={Math.round(progress)}
+        total={100}
+        variant="result"
+        loading={!data && !error}
+      >
+        {error ? <div className="error-box">{error}</div> : null}
 
-      {error ? <div className="error-box">{error}</div> : null}
+        {!data && !error ? <ExperienceCard title="Carregando evolução" loading /> : null}
 
-      {!data && !error ? <div>Carregando evolução...</div> : null}
+        {data ? (
+          <>
+            <ExperienceCard title="Progresso global" variant="result" active>
+              <p className="text-2xl font-bold text-primary-700 dark:text-primary-300">{progress.toFixed(1)}%</p>
+              <Progress value={progress} max={100} variant="journey" className="my-2" />
+              <p>Dificuldade adaptativa: {data.progression?.adaptiveDifficulty || 'medium'}</p>
+              <p>Próxima recomendação: {data.progression?.nextRecommendation?.focus || 'n/d'}</p>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Badge variant="xp">XP {gamification?.xp?.total || 0}</Badge>
+                <Badge variant="level">Nível {gamification?.level || 1}</Badge>
+                <Badge variant="streak">Streak {gamification?.streak?.current || 0}d</Badge>
+              </div>
+            </ExperienceCard>
 
-      {data ? (
-        <>
-          <div className="list-item">
-            <strong>Progresso</strong>
-            <p>{Number(data.progression?.progressPercent || 0).toFixed(1)}%</p>
-            <p>Dificuldade adaptativa: {data.progression?.adaptiveDifficulty || 'medium'}</p>
-            <p>Próxima recomendação: {data.progression?.nextRecommendation?.focus || 'n/d'}</p>
-            <div className="inline-pills">
-              <RewardPill label="XP" value={Math.round(Number(data.progression?.progressPercent || 0) * 8)} />
-              <RewardPill label="Streak" value={`${Math.max(1, (data.decisionHistory || []).length)} dias`} />
-            </div>
-          </div>
+            <ExperienceCard className="mt-4" title="Competências" variant="default">
+              <div className="list">
+                {(data.competencies || []).map((item) => (
+                  <CompetencyMeter
+                    key={item.id}
+                    label={`${item.competencyId} · nivel ${item.level}`}
+                    value={Number(item.score || 0)}
+                    baseline={Math.max(0, Number(item.score || 0) - 10)}
+                  />
+                ))}
+              </div>
+            </ExperienceCard>
 
-          <div className="list">
-            {(data.competencies || []).map((item) => (
-              <CompetencyMeter
-                key={item.id}
-                label={`${item.competencyId} · nivel ${item.level}`}
-                value={Number(item.score || 0)}
-                baseline={Math.max(0, Number(item.score || 0) - 10)}
-              />
-            ))}
-          </div>
+            <ExperienceCard className="mt-4" title="Histórico de decisões" variant="active">
+              <p>Total recente: {(data.decisionHistory || []).length}</p>
+              {(gamification?.achievements?.unlocked || []).length ? (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {gamification.achievements.unlocked.slice(0, 3).map((item) => (
+                    <Badge key={item.id} variant="achieved">{item.achievement?.title}</Badge>
+                  ))}
+                </div>
+              ) : null}
+            </ExperienceCard>
 
-          <div className="list-item">
-            <strong>Histórico de decisões</strong>
-            <p>Total recente: {(data.decisionHistory || []).length}</p>
-          </div>
-        </>
-      ) : null}
+            <ExperienceCard className="mt-4" title="Ranking de progressão" variant="mentor">
+              {leaderboard.length ? (
+                <div className="space-y-2">
+                  {leaderboard.map((entry) => (
+                    <div key={entry.userId} className="flex items-center justify-between rounded-lg border border-muted-200 bg-white/70 px-3 py-2 text-sm dark:border-dark-700 dark:bg-dark-800/50">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={entry.rank <= 3 ? 'achieved' : 'locked'}>#{entry.rank}</Badge>
+                        <span className="font-medium text-muted-900 dark:text-muted-100">{entry.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="xp">{entry.xpTotal} XP</Badge>
+                        <Badge variant="level">Nível {entry.level}</Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-600 dark:text-muted-400">Ranking ainda sem dados suficientes para exibição.</p>
+              )}
+            </ExperienceCard>
+          </>
+        ) : null}
+      </StageWrapper>
     </div>
   );
 }

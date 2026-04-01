@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
-import Card from '../components/Card.jsx';
-import EmptyState from '../components/EmptyState.jsx';
+import { Card, PageHeader, EmptyState, StatCard, StatusPill, FormField, Button, ExperienceCard, StageWrapper } from '../components/index.js';
 import { CompetencyMeter, JourneySummaryCard } from '../components/DomainComponents.jsx';
-import PageHeader from '../components/PageHeader.jsx';
 import { api } from '../services/api.js';
 
 const initialForm = { code: '', name: '', description: '', category: '' };
@@ -33,15 +31,17 @@ export default function CompetenciesPage() {
   }
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        eyebrow="Estrutura"
-        title="Mapa inicial de habilidades"
-        description="Cada competencia apresenta tipo, dimensoes, peso e exemplos de evidencia para guiar a evolucao na jornada."
-      />
-
-      <div className="grid-two">
-        <Card title="Nova competência">
+    <StageWrapper
+      stageKey="competencies"
+      title="Mapa de Competências"
+      subtitle="Define habilidades, dimensões e evidências para evolução na jornada"
+      completed={competencies.length > 0 ? 1 : 0}
+      total={1}
+      variant="default"
+      loading={false}
+    >
+      <div className="grid-two gap-6">
+        <ExperienceCard variant="destaque" title="Nova Competência">
           <form className="stack-form" onSubmit={handleSubmit}>
             <label>
               Código
@@ -62,9 +62,9 @@ export default function CompetenciesPage() {
             {error ? <div className="error-box">{error}</div> : null}
             <button type="submit">Salvar competência</button>
           </form>
-        </Card>
+        </ExperienceCard>
 
-        <Card title="Competências cadastradas">
+        <ExperienceCard variant="default" title="Competências Cadastradas">
           {competencies.length ? (
             <div className="list">
               {competencies.map((item) => (
@@ -88,8 +88,8 @@ export default function CompetenciesPage() {
               description="Cadastre competências como empatia, comunicação, negociação e pensamento crítico."
             />
           )}
-        </Card>
+        </ExperienceCard>
       </div>
-    </div>
+    </StageWrapper>
   );
 }

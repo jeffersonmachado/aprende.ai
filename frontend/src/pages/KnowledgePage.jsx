@@ -1,8 +1,5 @@
 import { useEffect, useState } from 'react';
-import Card from '../components/Card.jsx';
-import EmptyState from '../components/EmptyState.jsx';
-import PageHeader from '../components/PageHeader.jsx';
-import StatusPill from '../components/StatusPill.jsx';
+import { Card, PageHeader, EmptyState, StatCard, StatusPill, FormField, Button, ExperienceCard, StageWrapper } from '../components/index.js';
 import { api } from '../services/api.js';
 
 const initialSourceForm = { name: '', sourceType: 'upload' };
@@ -57,18 +54,20 @@ export default function KnowledgePage() {
   }
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        eyebrow="Conhecimento"
-        title="Base para RAG"
-        description="Estrutura inicial para fontes, documentos e evolução futura para chunks, embeddings e recuperação contextual."
-      />
-
+    <StageWrapper
+      stageKey="knowledge"
+      title="Base de Conhecimento para RAG"
+      subtitle="Gerencie fontes, documentos e estrutura de recuperação contextual"
+      completed={sources.length > 0 ? 1 : 0}
+      total={1}
+      variant="resultado"
+      loading={false}
+    >
       {error ? <div className="error-box">{error}</div> : null}
 
-      <div className="grid-two knowledge-layout">
+      <div className="grid-two knowledge-layout gap-6">
         <div className="stack-gap">
-          <Card title="Nova fonte">
+          <ExperienceCard variant="destaque" title="Nova Fonte">
             <form className="stack-form" onSubmit={createSource}>
               <label>
                 Nome
@@ -84,9 +83,9 @@ export default function KnowledgePage() {
               </label>
               <button type="submit">Salvar fonte</button>
             </form>
-          </Card>
+          </ExperienceCard>
 
-          <Card title="Novo documento">
+          <ExperienceCard variant="destaque" title="Novo Documento">
             <form className="stack-form" onSubmit={createDocument}>
               <label>
                 Fonte
@@ -106,10 +105,10 @@ export default function KnowledgePage() {
               </label>
               <button type="submit">Salvar documento</button>
             </form>
-          </Card>
+          </ExperienceCard>
         </div>
 
-        <Card title="Documentos indexados">
+        <ExperienceCard variant="default" title="Documentos Indexados">
           {documents.length ? (
             <div className="list">
               {documents.map((doc) => (
@@ -128,8 +127,8 @@ export default function KnowledgePage() {
               description="Crie fontes e documentos para formar a base inicial de conhecimento do aprende.AI."
             />
           )}
-        </Card>
+        </ExperienceCard>
       </div>
-    </div>
+    </StageWrapper>
   );
 }

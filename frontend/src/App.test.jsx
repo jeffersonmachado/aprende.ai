@@ -66,7 +66,7 @@ describe('App', () => {
     expect(await screen.findByText('Mock Login')).toBeInTheDocument();
   });
 
-  test('renderiza rota protegida com layout e jornada por padrao', async () => {
+  test('renderiza rota protegida com layout e fluxo de jornada por padrao', async () => {
     authToken = 'token-valido';
     render(
       <MemoryRouter initialEntries={['/']} future={routerFuture}>

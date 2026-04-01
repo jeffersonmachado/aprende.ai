@@ -20,6 +20,7 @@ import {
 } from '../../services/adaptiveEngine.service.js';
 import { getTenantOpenAIKey } from '../../services/tenantOpenAI.service.js';
 import { upsertUserCompetencyScore } from '../competency/competency.service.js';
+import { recordGamificationEvent } from '../gamification/gamification.service.js';
 
 async function ensureSeedScenario(tenantId) {
   const existing = await Scenario.findOne({ where: { tenantId, status: 'active' }, include: [{ model: ScenarioEpisode, as: 'episodes' }] });
@@ -325,6 +326,18 @@ export async function submitDecision(tenantId, userId, runId, payload) {
     scoreImpact: scoreDelta
   });
 
+  const gamificationPulse = await recordGamificationEvent(tenantId, userId, {
+    eventType: 'stage_completed',
+    source: 'simulation_decision',
+    referenceType: 'decision_log',
+    referenceId: decisionLog.id,
+    metadata: {
+      scoreDelta,
+      feedbackStyle,
+      optionId: option.id
+    }
+  });
+
   run.totalScore = Number(run.totalScore || 0) + scoreDelta;
   run.status = 'completed';
   run.completedAt = new Date();
@@ -369,6 +382,19 @@ export async function submitDecision(tenantId, userId, runId, payload) {
       evidence
     );
 
+    if (Number(scoreDelta) > 0) {
+      await recordGamificationEvent(tenantId, userId, {
+        eventType: 'competency_improved',
+        source: 'simulation_competency_update',
+        referenceType: 'competency',
+        referenceId: competency.id,
+        metadata: {
+          competencyName,
+          scoreDelta: Number(scoreDelta)
+        }
+      });
+    }
+
     competencyUpdates.push(updated);
   }
 
@@ -388,6 +414,24 @@ export async function submitDecision(tenantId, userId, runId, payload) {
   const completedRuns = await SimulationRun.count({ where: { tenantId, userId, status: 'completed' } });
   const allRuns = await SimulationRun.count({ where: { tenantId, userId } });
   const progressPercent = allRuns ? Math.min(100, (completedRuns / allRuns) * 100) : 0;
+  const previousStateJson = journeyState.stateJson || {};
+  const reachedJourneyCompletion = progressPercent >= 100;
+  const shouldAwardJourneyCompletion = reachedJourneyCompletion && !previousStateJson.journeyCompletionAwardedAt;
+
+  let journeyCompletionPulse = null;
+  if (shouldAwardJourneyCompletion) {
+    journeyCompletionPulse = await recordGamificationEvent(tenantId, userId, {
+      eventType: 'journey_completed',
+      source: 'journey_state_progress',
+      referenceType: 'simulation_run',
+      referenceId: run.id,
+      metadata: {
+        completedRuns,
+        allRuns,
+        progressPercent
+      }
+    });
+  }
 
   const currentDifficulty = (journeyState.stateJson && journeyState.stateJson.adaptiveDifficulty) || 'medium';
   const nextDifficulty = adjustDifficulty(currentDifficulty, scoreDelta);
@@ -396,10 +440,13 @@ export async function submitDecision(tenantId, userId, runId, payload) {
     progressPercent,
     lastEventAt: new Date(),
     stateJson: {
-      ...(journeyState.stateJson || {}),
+      ...previousStateJson,
       lastAction: 'decision_submitted',
       lastFeedback: feedback,
       adaptiveDifficulty: nextDifficulty,
+      journeyCompletionAwardedAt: shouldAwardJourneyCompletion
+        ? new Date().toISOString()
+        : previousStateJson.journeyCompletionAwardedAt || null,
       suggestedNextScenario: {
         focus: evaluatedCompetencyNames[0] || 'tomada de decisao',
         difficulty: nextDifficulty,
@@ -413,7 +460,18 @@ export async function submitDecision(tenantId, userId, runId, payload) {
     feedback,
     scoreDelta,
     competencyUpdates,
-    nextLoop: journeyState.stateJson?.suggestedNextScenario || null
+    nextLoop: journeyState.stateJson?.suggestedNextScenario || null,
+    gamification: {
+      xpAwarded: Number(gamificationPulse.xpAwarded || 0) + Number(journeyCompletionPulse?.xpAwarded || 0),
+      leveledUp: Boolean(gamificationPulse.leveledUp || journeyCompletionPulse?.leveledUp),
+      unlockedAchievements: [
+        ...(gamificationPulse.unlockedAchievements || []),
+        ...(journeyCompletionPulse?.unlockedAchievements || [])
+      ],
+      level: Number(journeyCompletionPulse?.progression.currentLevel || gamificationPulse.progression.currentLevel || 1),
+      streak: Number(journeyCompletionPulse?.streak.currentStreak || gamificationPulse.streak.currentStreak || 0),
+      journeyCompletedAwarded: Boolean(shouldAwardJourneyCompletion)
+    }
   };
 }
 

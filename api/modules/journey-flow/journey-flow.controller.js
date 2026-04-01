@@ -10,3 +10,21 @@ export const saveJourneyFlowState = asyncHandler(async (req, res) => {
   const data = await journeyFlowService.saveJourneyFlowState(req.tenant.id, req.auth.userId, req.body);
   res.json(data);
 });
+
+export const postJourneyStepCompletion = asyncHandler(async (req, res) => {
+  const data = await journeyFlowService.completeJourneyStep(req.tenant.id, req.auth.userId, {
+    ...req.body,
+    stepId: req.params.stepId
+  });
+  res.json(data);
+});
+
+export const postJourneyFlowTelemetry = asyncHandler(async (req, res) => {
+  const data = await journeyFlowService.registerJourneyTelemetry(req.tenant.id, req.auth.userId, req.body);
+  res.status(201).json(data);
+});
+
+export const postJourneyRewardClaim = asyncHandler(async (req, res) => {
+  const data = await journeyFlowService.claimJourneyReward(req.tenant.id, req.auth.userId, req.body);
+  res.json(data);
+});

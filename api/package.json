@@ -7,6 +7,7 @@
     "start": "node server.js",
     "db:migrate": "npx sequelize-cli db:migrate --config config/sequelize-cli.cjs --migrations-path db/migrations",
     "db:seed": "node db/seeds/ensure-demo-user.js",
+    "validate": "npm run lint --if-present && npm run test",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
     "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand --coverage"
   },

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Button, ExperienceCard, StageWrapper } from '../../components';
 import { saveLearningStyle } from '../../services/profileApi.js';
 
 const styleConfig = {
@@ -44,31 +45,40 @@ export default function LearningStylePage() {
   }
 
   return (
-    <div className="page-stack">
-      <h2>Perfil de aprendizagem</h2>
-      <p>Seu estilo altera conteúdo, mentoria e formato de simulação.</p>
+    <StageWrapper
+      stageKey="learning-style"
+      title="Perfil de aprendizagem"
+      subtitle="Seu estilo altera conteúdo, mentoria e formato de simulação"
+      completed={saved ? 1 : 0}
+      total={1}
+      variant="mentor"
+      loading={false}
+    >
+      <ExperienceCard variant="mentor" title="Selecione o estilo dominante">
+        <div className="list">
+          {Object.keys(styleConfig).map((key) => {
+            const selected = key === style;
+            return (
+              <button key={key} className="secondary-button" onClick={() => setStyle(key)} type="button">
+                {selected ? '● ' : ''}{key}
+              </button>
+            );
+          })}
+        </div>
+      </ExperienceCard>
 
-      <div className="list">
-        {Object.keys(styleConfig).map((key) => {
-          const selected = key === style;
-          return (
-            <button key={key} className="secondary-button" onClick={() => setStyle(key)} type="button">
-              {selected ? '● ' : ''}{key}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="list-item">
-        <strong>Prévia</strong>
-        <p>Conteúdo: {styleConfig[style].contentPreference}</p>
-        <p>Mentoria: {styleConfig[style].mentorshipStyle}</p>
-        <p>Simulação: {styleConfig[style].simulationFormat}</p>
-      </div>
+      <ExperienceCard variant="default" title="Prévia" className="mt-4">
+        <div className="list-item">
+          <strong>Prévia</strong>
+          <p>Conteúdo: {styleConfig[style].contentPreference}</p>
+          <p>Mentoria: {styleConfig[style].mentorshipStyle}</p>
+          <p>Simulação: {styleConfig[style].simulationFormat}</p>
+        </div>
+      </ExperienceCard>
 
       {error ? <div className="error-box">{error}</div> : null}
       {saved ? <div className="list-item">Perfil salvo com sucesso.</div> : null}
-      <button type="button" onClick={handleSave}>Salvar perfil de aprendizagem</button>
-    </div>
+      <Button type="button" onClick={handleSave}>Salvar perfil de aprendizagem</Button>
+    </StageWrapper>
   );
 }

@@ -10,6 +10,7 @@ import {
 } from '../../db/models/index.js';
 import { AppError } from '../../core/errors/AppError.js';
 import { chatCompletion } from '../../core/ai/chatCompletion.js';
+import { recordGamificationEvent } from '../gamification/gamification.service.js';
 export async function listAssessments(tenantId) { return Assessment.findAll({ where: { tenantId }, order: [['createdAt', 'DESC']] }); }
 export async function getAssessment(tenantId, id) {
   const assessment = await Assessment.findOne({ where: { tenantId, id }, include: [{ model: AssessmentQuestion, as: 'questions' }] });
@@ -158,6 +159,16 @@ export async function evaluateAssessment(tenantId, userId, payload) {
     metadata: {
       recommendation: result.recommendation,
       nextStepSuggestion: result.nextStepSuggestion
+    }
+  });
+
+  await recordGamificationEvent(tenantId, userId, {
+    eventType: 'assessment_correct',
+    source: 'assessment_submission',
+    referenceType: 'assessment_submission',
+    referenceId: submission.id,
+    metadata: {
+      score: Number(result.score || 0)
     }
   });
 

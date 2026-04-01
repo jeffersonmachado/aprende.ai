@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
+import './styles/globals.css';
 import './styles/index.css';
 
 const routerBasename = import.meta.env.BASE_URL === '/'

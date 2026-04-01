@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
-import PageHeader from './PageHeader.jsx';
+import PageHeader from './core/PageHeader.jsx';
 
 describe('PageHeader', () => {
   test('renderiza todos os campos quando informados', () => {

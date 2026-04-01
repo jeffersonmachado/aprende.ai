@@ -46,7 +46,7 @@ describe('DashboardPage', () => {
 
     expect(await screen.findByText('Seu dashboard de aprendizagem')).toBeInTheDocument();
     expect(screen.getByText('64%')).toBeInTheDocument();
-    expect(screen.getByText('Concluida')).toBeInTheDocument();
+    expect(screen.getByText('Concluída')).toBeInTheDocument();
     expect(screen.getByText('Analista de Cenarios')).toBeInTheDocument();
   });
 

@@ -13,6 +13,7 @@ import mentorRoutes from './mentor/mentor.routes.js';
 import analyticsRoutes from './analytics/analytics.routes.js';
 import feedbackRoutes from './feedback/feedback.routes.js';
 import journeyFlowRoutes from './journey-flow/journey-flow.routes.js';
+import gamificationRoutes from './gamification/gamification.routes.js';
 
 export function registerModules(app) {
   app.use(systemRoutes);
@@ -31,4 +32,5 @@ export function registerModules(app) {
   app.use('/api', analyticsRoutes);
   app.use('/api', feedbackRoutes);
   app.use('/api', journeyFlowRoutes);
+  app.use('/api', gamificationRoutes);
 }

@@ -32,6 +32,9 @@ import LearningStyleProfileFactory from './LearningStyleProfile.js';
 import JourneyPlanFactory from './JourneyPlan.js';
 import JourneyPlanStepFactory from './JourneyPlanStep.js';
 import JourneyStateFactory from './JourneyState.js';
+import JourneyRewardFactory from './JourneyReward.js';
+import JourneyEventFactory from './JourneyEvent.js';
+import MentorStateFactory from './MentorState.js';
 import ScenarioFactory from './Scenario.js';
 import ScenarioEpisodeFactory from './ScenarioEpisode.js';
 import DecisionOptionFactory from './DecisionOption.js';
@@ -39,6 +42,13 @@ import SimulationRunFactory from './SimulationRun.js';
 import DecisionLogFactory from './DecisionLog.js';
 import CompetencyEvidenceFactory from './CompetencyEvidence.js';
 import AssessmentSubmissionFactory from './AssessmentSubmission.js';
+import GamificationEventFactory from './GamificationEvent.js';
+import UserProgressionFactory from './UserProgression.js';
+import UserStreakFactory from './UserStreak.js';
+import AchievementFactory from './Achievement.js';
+import UserAchievementFactory from './UserAchievement.js';
+import RewardRuleFactory from './RewardRule.js';
+import LevelRuleFactory from './LevelRule.js';
 
 export const Tenant = TenantFactory(sequelize);
 export const Role = RoleFactory(sequelize);
@@ -73,6 +83,9 @@ export const LearningStyleProfile = LearningStyleProfileFactory(sequelize);
 export const JourneyPlan = JourneyPlanFactory(sequelize);
 export const JourneyPlanStep = JourneyPlanStepFactory(sequelize);
 export const JourneyState = JourneyStateFactory(sequelize);
+export const JourneyReward = JourneyRewardFactory(sequelize);
+export const JourneyEvent = JourneyEventFactory(sequelize);
+export const MentorState = MentorStateFactory(sequelize);
 export const Scenario = ScenarioFactory(sequelize);
 export const ScenarioEpisode = ScenarioEpisodeFactory(sequelize);
 export const DecisionOption = DecisionOptionFactory(sequelize);
@@ -80,6 +93,13 @@ export const SimulationRun = SimulationRunFactory(sequelize);
 export const DecisionLog = DecisionLogFactory(sequelize);
 export const CompetencyEvidence = CompetencyEvidenceFactory(sequelize);
 export const AssessmentSubmission = AssessmentSubmissionFactory(sequelize);
+export const GamificationEvent = GamificationEventFactory(sequelize);
+export const UserProgression = UserProgressionFactory(sequelize);
+export const UserStreak = UserStreakFactory(sequelize);
+export const Achievement = AchievementFactory(sequelize);
+export const UserAchievement = UserAchievementFactory(sequelize);
+export const RewardRule = RewardRuleFactory(sequelize);
+export const LevelRule = LevelRuleFactory(sequelize);
 
 TenantUser.belongsTo(User, { as: 'user', foreignKey: 'userId' });
 TenantUser.belongsTo(Tenant, { as: 'tenant', foreignKey: 'tenantId' });
@@ -109,6 +129,10 @@ User.hasOne(JourneyState, { as: 'journeyState', foreignKey: 'userId' });
 User.hasMany(SimulationRun, { as: 'simulationRuns', foreignKey: 'userId' });
 User.hasMany(CompetencyEvidence, { as: 'competencyEvidences', foreignKey: 'userId' });
 User.hasMany(AssessmentSubmission, { as: 'assessmentSubmissions', foreignKey: 'userId' });
+User.hasOne(UserProgression, { as: 'progression', foreignKey: 'userId' });
+User.hasOne(UserStreak, { as: 'streak', foreignKey: 'userId' });
+User.hasMany(GamificationEvent, { as: 'gamificationEvents', foreignKey: 'userId' });
+User.hasMany(UserAchievement, { as: 'unlockedAchievements', foreignKey: 'userId' });
 
 LearningGoal.belongsTo(User, { as: 'user', foreignKey: 'userId' });
 LearningStyleProfile.belongsTo(User, { as: 'user', foreignKey: 'userId' });
@@ -124,6 +148,18 @@ JourneyPlanStep.belongsTo(Lesson, { as: 'lesson', foreignKey: 'lessonId' });
 JourneyState.belongsTo(User, { as: 'user', foreignKey: 'userId' });
 JourneyState.belongsTo(JourneyPlan, { as: 'journeyPlan', foreignKey: 'journeyPlanId' });
 JourneyState.belongsTo(JourneyPlanStep, { as: 'currentStep', foreignKey: 'currentStepId' });
+JourneyState.hasMany(JourneyReward, { as: 'rewards', foreignKey: 'journeyStateId' });
+JourneyState.hasMany(JourneyEvent, { as: 'events', foreignKey: 'journeyId' });
+JourneyState.hasOne(MentorState, { as: 'mentorState', foreignKey: 'journeyStateId' });
+
+JourneyReward.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+JourneyReward.belongsTo(JourneyState, { as: 'journeyState', foreignKey: 'journeyStateId' });
+
+JourneyEvent.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+JourneyEvent.belongsTo(JourneyState, { as: 'journeyState', foreignKey: 'journeyId' });
+
+MentorState.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+MentorState.belongsTo(JourneyState, { as: 'journeyState', foreignKey: 'journeyStateId' });
 
 Scenario.belongsTo(Competency, { as: 'competency', foreignKey: 'competencyId' });
 Scenario.belongsTo(LearningTrack, { as: 'track', foreignKey: 'learningTrackId' });
@@ -149,5 +185,17 @@ CompetencyEvidence.belongsTo(Competency, { as: 'competency', foreignKey: 'compet
 AssessmentSubmission.belongsTo(User, { as: 'user', foreignKey: 'userId' });
 AssessmentSubmission.belongsTo(Assessment, { as: 'assessment', foreignKey: 'assessmentId' });
 AssessmentSubmission.belongsTo(AssessmentAttempt, { as: 'attempt', foreignKey: 'assessmentAttemptId' });
+
+UserProgression.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+UserStreak.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+GamificationEvent.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+GamificationEvent.belongsTo(Tenant, { as: 'tenant', foreignKey: 'tenantId' });
+
+Achievement.belongsTo(Tenant, { as: 'tenant', foreignKey: 'tenantId' });
+UserAchievement.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+UserAchievement.belongsTo(Achievement, { as: 'achievement', foreignKey: 'achievementId' });
+
+RewardRule.belongsTo(Tenant, { as: 'tenant', foreignKey: 'tenantId' });
+LevelRule.belongsTo(Tenant, { as: 'tenant', foreignKey: 'tenantId' });
 
 export { sequelize };

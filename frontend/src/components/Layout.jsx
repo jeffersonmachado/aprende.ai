@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../context/useAuth.js';
 import { hasSystemAccess } from '../utils/access.js';
 
@@ -7,10 +7,21 @@ const navGroups = [
   {
     title: 'Experiencia',
     items: [
-      { to: '/journey-flow', label: 'Minha Jornada', description: 'Fluxo guiado com 15 etapas da jornada' },
+      { to: '/dashboard', label: 'Dashboard', description: 'Visao executiva de progresso e competencias' },
+      { to: '/journey-flow', label: 'Minha Jornada', description: 'Fluxo completo em 15 etapas com progressao guiada' },
+      { to: '/scenario', label: 'Cenario em Etapas', description: 'Simulador progressivo orientado por decisoes' },
       { to: '/simulation', label: 'Simulacoes', description: 'Cenarios de decisao adaptativos' },
+      { to: '/assessment', label: 'Assessment', description: 'Avaliacao contextual por competencias e evidencias' },
       { to: '/evolution', label: 'Evolucao', description: 'Competencias, progresso e comparativos' },
       { to: '/mentor', label: 'Mentor IA', description: 'Mentoria contextual da decisao atual' }
+    ]
+  },
+  {
+    title: 'Configuracao de Jornada',
+    items: [
+      { to: '/onboarding', label: 'Onboarding', description: 'Definicao inicial de perfil e contexto' },
+      { to: '/goals', label: 'Metas', description: 'Objetivo e resultado esperado da aprendizagem' },
+      { to: '/learning-style', label: 'Estilo de Aprendizagem', description: 'Preferencias para conteudo, mentoria e simulacao' }
     ]
   },
   {
@@ -25,6 +36,7 @@ const navGroups = [
     title: 'Sistema',
     items: [
       { to: '/system/dashboard', label: 'Dashboard tecnico', description: 'Health, telemetria e operacao' },
+      { to: '/system/feedback', label: 'Feedback tecnico', description: 'Validacao de estilos e prompts do motor de feedback' },
       { to: '/integration', label: 'Integracao', description: 'Eventos, source system e direction' },
       { to: '/settings/openai', label: 'Configuracoes IA', description: 'Ajustes de credenciais e provedor' }
     ]
@@ -33,9 +45,12 @@ const navGroups = [
 
 function isRouteMatch(pathname, to) {
   if (pathname === to) return true;
-  if (to === '/journey-flow' && pathname.startsWith('/journey-flow/')) return true;
+  if (to === '/dashboard' && pathname.startsWith('/dashboard')) return true;
+  if (to === '/journey-flow' && pathname.startsWith('/journey-flow')) return true;
+  if (to === '/scenario' && pathname.startsWith('/scenario/')) return true;
   if (to === '/simulation' && pathname.startsWith('/simulation/')) return true;
-  if (to === '/system/dashboard' && pathname.startsWith('/system/')) return true;
+  if (to === '/system/dashboard' && pathname.startsWith('/system/dashboard')) return true;
+  if (to === '/system/feedback' && pathname.startsWith('/system/feedback')) return true;
   return false;
 }
 
@@ -43,7 +58,23 @@ export default function Layout() {
   const { logout, user } = useAuth();
   const location = useLocation();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const contentRef = useRef(null);
   const canSeeSystem = hasSystemAccess(user);
+
+  function scrollToTop() {
+    if (contentRef.current && typeof contentRef.current.scrollTo === 'function') {
+      contentRef.current.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }
+
+    if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }
+
+    if (typeof document !== 'undefined') {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }
+  }
 
   const visibleNavGroups = useMemo(() => {
     return navGroups.filter((group) => group.title !== 'Sistema' || canSeeSystem);
@@ -53,6 +84,10 @@ export default function Layout() {
 
   useEffect(() => {
     setIsDrawerOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    scrollToTop();
   }, [location.pathname]);
 
   const activeItem = useMemo(() => {
@@ -72,7 +107,12 @@ export default function Layout() {
             {group.items.map((item) => {
               const isActive = isRouteMatch(location.pathname, item.to);
               return (
-                <Link key={item.to} className={`nav-link ${isActive ? 'active' : ''}`} to={item.to}>
+                <Link
+                  key={item.to}
+                  className={`nav-link ${isActive ? 'active' : ''}`}
+                  to={item.to}
+                  onClick={scrollToTop}
+                >
                   <span>{item.label}</span>
                   <small>{item.description}</small>
                 </Link>
@@ -103,7 +143,7 @@ export default function Layout() {
         </div>
       </aside>
 
-      <main className="content">
+      <main ref={contentRef} className="content">
         <header className="content-topbar">
           <button type="button" className="menu-toggle" onClick={() => setIsDrawerOpen(true)}>Menu</button>
           <div>

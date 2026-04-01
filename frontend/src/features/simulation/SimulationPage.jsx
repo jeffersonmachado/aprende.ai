@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { RewardPill, ScenarioOptionCard } from '../../components/DomainComponents.jsx';
-import SkeletonBlock from '../../components/SkeletonBlock.jsx';
+import { ExperienceCard, SkeletonBlock, StageWrapper } from '../../components/index.js';
 import { getSimulationCatalog, getSimulationState, startSimulation, submitDecision } from '../../services/simulationApi.js';
 
 export default function SimulationPage() {
@@ -62,8 +62,15 @@ export default function SimulationPage() {
   }
 
   return (
-    <div className="page-stack">
-      <h2>Simulacoes</h2>
+    <StageWrapper
+      stageKey="simulation"
+      title="Simulacoes"
+      subtitle="Cenarios de decisao com impacto registrado no estado oficial"
+      completed={state ? 1 : 0}
+      total={1}
+      variant="decision"
+      loading={loadingCatalog}
+    >
       {error ? <div className="error-box">{error}</div> : null}
 
       {(loadingCatalog || loadingState) ? (
@@ -74,12 +81,14 @@ export default function SimulationPage() {
       ) : null}
 
       {!state ? (
-        <div className="journey-summary-card">
+        <ExperienceCard variant="default" title="Missao disponível">
+          <div className="journey-summary-card">
           <h4>{firstScenario?.title || 'Sem cenario disponivel'}</h4>
           <p>{firstScenario?.context || firstScenario?.description || 'Crie cenarios para comecar.'}</p>
           <p>{firstScenario?.problem || ''}</p>
           {firstScenario ? <button onClick={handleStart}>Iniciar missao</button> : null}
-        </div>
+          </div>
+        </ExperienceCard>
       ) : null}
 
       {state ? (
@@ -126,6 +135,6 @@ export default function SimulationPage() {
           {lastImpact !== null ? <p><strong>Impacto:</strong> {Number(lastImpact).toFixed(1)}</p> : null}
         </div>
       ) : null}
-    </div>
+    </StageWrapper>
   );
 }

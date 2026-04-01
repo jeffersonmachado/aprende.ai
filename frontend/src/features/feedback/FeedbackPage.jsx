@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Button, ExperienceCard, StageWrapper } from '../../components';
 import { generateFeedback } from '../../services/feedbackApi.js';
 
 const styles = ['socratico', 'direto', 'reflexivo', 'analitico'];
@@ -32,33 +33,44 @@ export default function FeedbackPage() {
   }
 
   return (
-    <div className="page-stack admin-surface">
-      <h2>Feedback IA (utilitario tecnico)</h2>
-      <p>Tela interna para validacao de prompts e estilos. Na experiencia principal, feedback aparece dentro da jornada.</p>
+    <StageWrapper
+      stageKey="feedback"
+      title="Feedback IA (utilitario tecnico)"
+      subtitle="Validação de prompts e estilos de feedback fora da jornada principal"
+      completed={feedback ? 1 : 0}
+      total={1}
+      variant="default"
+      loading={false}
+    >
+      <div className="admin-surface">
+        <ExperienceCard variant="default" title="Gerar feedback">
+          <form className="stack-form" onSubmit={handleGenerate}>
+            <label>
+              Estilo de feedback
+              <select className="state-select-shell" value={selectedStyle} onChange={(event) => setSelectedStyle(event.target.value)}>
+                {styles.map((style) => <option key={style} value={style}>{style}</option>)}
+              </select>
+            </label>
 
-      <form className="stack-form" onSubmit={handleGenerate}>
-        <label>
-          Estilo de feedback
-          <select value={selectedStyle} onChange={(event) => setSelectedStyle(event.target.value)}>
-            {styles.map((style) => <option key={style} value={style}>{style}</option>)}
-          </select>
-        </label>
+            <label>
+              Decisão
+              <textarea value={decision} onChange={(event) => setDecision(event.target.value)} />
+            </label>
 
-        <label>
-          Decisão
-          <textarea value={decision} onChange={(event) => setDecision(event.target.value)} />
-        </label>
+            {error ? <div className="error-box">{error}</div> : null}
+            <Button type="submit">Gerar feedback</Button>
+          </form>
+        </ExperienceCard>
 
-        {error ? <div className="error-box">{error}</div> : null}
-        <button type="submit">Gerar feedback</button>
-      </form>
-
-      {feedback ? (
-        <div className="list-item">
-          <strong>Feedback ({selectedStyle})</strong>
-          <p>{feedback}</p>
-        </div>
-      ) : null}
-    </div>
+        {feedback ? (
+          <ExperienceCard variant="result" title="Resposta do modelo" className="mt-4">
+            <div className="list-item">
+              <strong>Feedback ({selectedStyle})</strong>
+              <p>{feedback}</p>
+            </div>
+          </ExperienceCard>
+        ) : null}
+      </div>
+    </StageWrapper>
   );
 }
