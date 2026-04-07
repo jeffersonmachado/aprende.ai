@@ -4,7 +4,9 @@ export default (sequelize) => {
   const IntegrationEvent = sequelize.define('IntegrationEvent', {
     id: { type: DataTypes.UUID, primaryKey: true },
     tenantId: { type: DataTypes.UUID, allowNull: false, field: 'tenant_id' },
+    provider: { type: DataTypes.STRING(50), allowNull: true },
     sourceSystem: { type: DataTypes.STRING(80), allowNull: false, field: 'source_system' },
+    eventName: { type: DataTypes.STRING(120), allowNull: true, field: 'event_name' },
     eventType: { type: DataTypes.STRING(120), allowNull: false, field: 'event_type' },
     direction: { type: DataTypes.STRING(20), allowNull: false },
     status: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'active' },

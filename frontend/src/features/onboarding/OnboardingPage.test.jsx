@@ -1,7 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 
 const saveOnboardingMock = vi.fn();
+const routerFuture = { v7_startTransition: true, v7_relativeSplatPath: true };
 
 vi.mock('../../services/profileApi.js', () => ({
   saveOnboarding: (...args) => saveOnboardingMock(...args)
@@ -18,9 +20,15 @@ describe('OnboardingPage', () => {
       }
     });
 
-    render(<OnboardingPage />);
+    render(
+      <MemoryRouter future={routerFuture}>
+        <OnboardingPage />
+      </MemoryRouter>
+    );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Salvar onboarding e gerar jornada' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Avancar etapa' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Avancar etapa' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Gerar jornada personalizada' }));
 
     expect(saveOnboardingMock).toHaveBeenCalledTimes(1);
     expect(await screen.findByText('Jornada personalizada')).toBeInTheDocument();

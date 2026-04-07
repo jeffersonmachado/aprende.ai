@@ -34,6 +34,13 @@ const tenantConfig = {
 - **Context**: Temas, autenticação, configurações globais
 - **Futuro (Redux/Zustand)**: Estado complexo compartilhado
 
+### 4. **Backend Como Autoridade Da Campanha**
+
+- `JourneyRuntimeContext` fornece o snapshot amplo da jornada.
+- `CampaignRuntimeContext` resolve capítulo, fase atual, navegação e persistência de progresso.
+- `JourneyEngineRuntimeContext` conversa com o backend transacional do engine e mantém o runtime operacional da fase.
+- As telas da campanha não calculam score, twist, reward ou world state localmente.
+
 ## 🏗️ Estrutura de Pastas Detalhada
 
 ```
@@ -70,12 +77,16 @@ src/
 │
 ├── context/                 # Context API
 │   ├── AuthContext.jsx
+│   ├── JourneyRuntimeContext.jsx
+│   ├── CampaignRuntimeContext.jsx
+│   ├── JourneyEngineRuntimeContext.jsx
 │   ├── ThemeContext.jsx
 │   └── TenantContext.jsx
 │
 ├── services/                # Serviços (API, utils)
 │   ├── api.js               # Cliente HTTP
 │   ├── auth.js              # Funções de auth
+│   ├── journeyEngineApi.js  # Endpoints do journey-engine
 │   └── trilhas.js           # Funções de trilhas
 │
 ├── lib/                     # Utilitários
@@ -173,18 +184,60 @@ export const TrilhasPage = () => {
 ```
 API Response
     ↓
-Service (Transform)
+Service / Runtime API
     ↓
-Context/State
+Context (JourneyRuntime / CampaignRuntime / JourneyEngineRuntime)
     ↓
-Page Component
+Route/Page Component
     ↓
-Smart Components (Logic)
+Phase Component
     ↓
-Dumb Components (UI)
+Presentation Components
     ↓
 User Interaction
 ```
+
+## 🎮 Fluxo atual da campanha
+
+Rotas principais:
+- `/campaign`
+- `/campaign/:chapterId/:phaseId`
+- `/journey-map`
+- `/competency-dashboard`
+
+Fases renderizadas no frontend:
+- `briefing`
+- `mission-play`
+- `consequence`
+- `plot-twist`
+- `reflection`
+- `phase-result`
+- `progression`
+
+Arquivos centrais do fluxo:
+- `src/features/campaign/CampaignFlowPage.jsx`
+- `src/features/journey-engine/PhaseBriefingPage.jsx`
+- `src/features/journey-engine/MissionPlayPage.jsx`
+
+## Testes E2E
+
+Estrutura atual da suíte Playwright:
+- `e2e/support/journey-fixtures.js`: mocks, autenticação e runtime compartilhado.
+- `e2e/campaign-core.spec.js`: happy path da campanha e progressão entre capítulos.
+- `e2e/navigation.spec.js`: rotas autenticadas de mapa e competências.
+- `e2e/resilience.spec.js`: erros de autenticação, runtime e leitura de competências.
+
+Diretriz prática:
+- manter cada spec focado em um domínio funcional.
+- evitar duplicar mocks de rede fora de `e2e/support/`.
+- quando um endpoint novo impactar vários fluxos, atualizar primeiro o fixture compartilhado.
+- `src/features/journey-engine/ConsequencePage.jsx`
+- `src/features/journey-engine/PlotTwistPage.jsx`
+- `src/features/journey-engine/ReflectionPage.jsx`
+- `src/features/journey-engine/PhaseResultPage.jsx`
+- `src/features/journey-engine/ProgressionPage.jsx`
+- `src/pages/JourneyMapPage.jsx`
+- `src/pages/CompetencyDashboardPage.jsx`
 
 ## 🎨 Convenções de Naming
 

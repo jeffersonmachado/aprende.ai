@@ -35,6 +35,9 @@ import JourneyStateFactory from './JourneyState.js';
 import JourneyRewardFactory from './JourneyReward.js';
 import JourneyEventFactory from './JourneyEvent.js';
 import MentorStateFactory from './MentorState.js';
+import JourneyMissionFactory from './JourneyMission.js';
+import JourneyTwistRuleFactory from './JourneyTwistRule.js';
+import JourneyTwistLogFactory from './JourneyTwistLog.js';
 import ScenarioFactory from './Scenario.js';
 import ScenarioEpisodeFactory from './ScenarioEpisode.js';
 import DecisionOptionFactory from './DecisionOption.js';
@@ -86,6 +89,9 @@ export const JourneyState = JourneyStateFactory(sequelize);
 export const JourneyReward = JourneyRewardFactory(sequelize);
 export const JourneyEvent = JourneyEventFactory(sequelize);
 export const MentorState = MentorStateFactory(sequelize);
+export const JourneyMission = JourneyMissionFactory(sequelize);
+export const JourneyTwistRule = JourneyTwistRuleFactory(sequelize);
+export const JourneyTwistLog = JourneyTwistLogFactory(sequelize);
 export const Scenario = ScenarioFactory(sequelize);
 export const ScenarioEpisode = ScenarioEpisodeFactory(sequelize);
 export const DecisionOption = DecisionOptionFactory(sequelize);
@@ -160,6 +166,15 @@ JourneyEvent.belongsTo(JourneyState, { as: 'journeyState', foreignKey: 'journeyI
 
 MentorState.belongsTo(User, { as: 'user', foreignKey: 'userId' });
 MentorState.belongsTo(JourneyState, { as: 'journeyState', foreignKey: 'journeyStateId' });
+
+JourneyMission.belongsTo(Tenant, { as: 'tenant', foreignKey: 'tenantId' });
+
+JourneyTwistRule.belongsTo(Tenant, { as: 'tenant', foreignKey: 'tenantId' });
+
+JourneyTwistLog.belongsTo(Tenant, { as: 'tenant', foreignKey: 'tenantId' });
+JourneyTwistLog.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+JourneyTwistLog.belongsTo(JourneyState, { as: 'journeyState', foreignKey: 'journeyStateId' });
+JourneyTwistLog.belongsTo(JourneyTwistRule, { as: 'twistRule', foreignKey: 'twistRuleId' });
 
 Scenario.belongsTo(Competency, { as: 'competency', foreignKey: 'competencyId' });
 Scenario.belongsTo(LearningTrack, { as: 'track', foreignKey: 'learningTrackId' });

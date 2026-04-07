@@ -14,6 +14,8 @@ import analyticsRoutes from './analytics/analytics.routes.js';
 import feedbackRoutes from './feedback/feedback.routes.js';
 import journeyFlowRoutes from './journey-flow/journey-flow.routes.js';
 import gamificationRoutes from './gamification/gamification.routes.js';
+import journeyEngineRoutes from './journey-engine/journey-engine.routes.js';
+import journeyAdaptiveRoutes from './journey-adaptive/journey-adaptive.routes.js';
 
 export function registerModules(app) {
   app.use(systemRoutes);
@@ -32,5 +34,7 @@ export function registerModules(app) {
   app.use('/api', analyticsRoutes);
   app.use('/api', feedbackRoutes);
   app.use('/api', journeyFlowRoutes);
+  app.use('/api', journeyEngineRoutes);
   app.use('/api', gamificationRoutes);
+  app.use('/api', journeyAdaptiveRoutes);
 }

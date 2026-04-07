@@ -1,5 +1,6 @@
 {
   "name": "aprende-ai",
+  "version": "2.1.0",
   "private": true,
   "scripts": {
     "dev": "bash ./scripts/start-dev.sh",
@@ -14,12 +15,20 @@
     "deploy:api": "bash ./scripts/docker-deploy.sh --prod --build --api-only",
     "deploy:frontend": "bash ./scripts/docker-deploy.sh --prod --build --frontend-only",
     "zip": "bash ./scripts/generate-zip.sh",
+    "zip:verify": "bash ./scripts/verify-artifact.sh",
+    "zip:verify:clean": "bash ./scripts/verify-artifact.sh --require-clean",
+    "release:index": "bash ./scripts/update-release-index.sh",
+    "release:changelog": "bash ./scripts/update-release-changelog.sh",
+    "release:artifact": "bash ./scripts/release-artifact.sh",
+    "release:artifact:clean": "bash ./scripts/release-artifact.sh --require-clean",
     "zip:all": "bash ./scripts/generate-zip.sh --include-node-modules --include-coverage --include-dist",
     "zip:api": "bash ./scripts/generate-zip.sh -i 'api/**' -i 'package.json' -i 'package-lock.json' -n api-only.zip",
     "zip:frontend": "bash ./scripts/generate-zip.sh -i 'frontend/**' -i 'package.json' -i 'package-lock.json' -n frontend-only.zip",
     "test": "npm --prefix api run test && npm --prefix frontend run test",
     "test:api": "npm --prefix api run test",
     "test:frontend": "npm --prefix frontend run test",
+    "test:frontend:e2e": "npm --prefix frontend run test:e2e",
+    "test:e2e": "npm run test:frontend:e2e",
     "test:coverage": "npm --prefix api run test:coverage && npm --prefix frontend run test:coverage",
     "validate": "npm --prefix api run lint --if-present && npm --prefix frontend run lint --if-present && npm --prefix api run test && npm --prefix frontend run build && npm --prefix frontend run test"
   }

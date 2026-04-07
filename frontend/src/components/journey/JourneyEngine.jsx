@@ -128,7 +128,7 @@ export default function JourneyEngine({
   return (
     <section
       className={cn(
-        'rounded-3xl border border-primary-100/80 bg-gradient-to-br from-primary-50/80 via-orange-50/50 to-rose-100/50 p-4 shadow-2xl shadow-primary-500/10 backdrop-blur-sm',
+        'journey-engine-shell rounded-3xl border border-primary-100/80 p-4 shadow-2xl shadow-primary-500/10 backdrop-blur-sm',
         compact && 'rounded-2xl p-3',
         mobile && 'p-3',
         className

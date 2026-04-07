@@ -25,13 +25,13 @@ describe('MentorPage', () => {
       gamification: { xpAwarded: 12, level: 1, streak: 1, leveledUp: false, unlockedAchievements: [] },
     });
 
-    render(<MentorPage />);
+    render(<MentorPage campaignPhase={{ content: { apiContext: { chapterFocus: 'Comunicação', missionTitle: 'Capítulo teste' }, messagePlaceholder: 'Quero ajuda para...' } }} />);
 
     fireEvent.change(screen.getByLabelText('Modo do coach'), { target: { value: 'analitico' } });
     fireEvent.change(screen.getByPlaceholderText(/Quero ajuda/i), { target: { value: 'Me ajude' } });
     fireEvent.click(screen.getByRole('button', { name: 'Enviar ao mentor' }));
 
-    expect(sendMentorMessageMock).toHaveBeenCalledWith('Me ajude', 'analitico');
+    expect(sendMentorMessageMock).toHaveBeenCalledWith('Me ajude', 'analitico', { chapterFocus: 'Comunicação', missionTitle: 'Capítulo teste' });
     expect(await screen.findByText('Você está numa fase de transição de liderança.')).toBeInTheDocument();
   });
 });

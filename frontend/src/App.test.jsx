@@ -24,32 +24,20 @@ vi.mock('./pages/LoginPage.jsx', () => ({
   default: () => <div>Mock Login</div>
 }));
 
-vi.mock('./pages/DashboardPage.jsx', () => ({
-  default: () => <div>Mock Dashboard</div>
+vi.mock('./pages/AprendeAiReferencePage.jsx', () => ({
+  default: () => <div>Mock Reference</div>
 }));
 
-vi.mock('./pages/TechnicalDashboardPage.jsx', () => ({
-  default: () => <div>Mock Technical Dashboard</div>
+vi.mock('./pages/AprendeAiGamePage.jsx', () => ({
+  default: () => <div>Mock Game Page</div>
 }));
 
-vi.mock('./pages/TracksPage.jsx', () => ({
-  default: () => <div>Mock Tracks</div>
+vi.mock('./context/JourneyRuntimeContext.jsx', () => ({
+  JourneyRuntimeProvider: ({ children }) => <>{children}</>
 }));
 
-vi.mock('./pages/CompetenciesPage.jsx', () => ({
-  default: () => <div>Mock Competencies</div>
-}));
-
-vi.mock('./pages/KnowledgePage.jsx', () => ({
-  default: () => <div>Mock Knowledge</div>
-}));
-
-vi.mock('./pages/IntegrationPage.jsx', () => ({
-  default: () => <div>Mock Integration</div>
-}));
-
-vi.mock('./features/journey-flow/JourneyFlowPage.jsx', () => ({
-  default: () => <div>Mock Journey Flow</div>
+vi.mock('./context/CampaignRuntimeContext.jsx', () => ({
+  CampaignRuntimeProvider: ({ children }) => <>{children}</>
 }));
 
 import App from './App.jsx';
@@ -66,19 +54,19 @@ describe('App', () => {
     expect(await screen.findByText('Mock Login')).toBeInTheDocument();
   });
 
-  test('renderiza rota protegida com layout e fluxo de jornada por padrao', async () => {
+  test('renderiza rota protegida da campanha', async () => {
     authToken = 'token-valido';
     render(
-      <MemoryRouter initialEntries={['/']} future={routerFuture}>
+      <MemoryRouter initialEntries={['/aprende-ai-game']} future={routerFuture}>
         <App />
       </MemoryRouter>
     );
 
     expect(await screen.findByText('Mock Layout')).toBeInTheDocument();
-    expect(screen.getByText('Mock Journey Flow')).toBeInTheDocument();
+    expect(await screen.findByText('Mock Game Page')).toBeInTheDocument();
   });
 
-  test('renderiza rota de trilhas quando autenticado', async () => {
+  test('redireciona qualquer rota autenticada legada para a experiência gamificada', async () => {
     authToken = 'token-valido';
     render(
       <MemoryRouter initialEntries={['/tracks']} future={routerFuture}>
@@ -87,6 +75,29 @@ describe('App', () => {
     );
 
     expect(await screen.findByText('Mock Layout')).toBeInTheDocument();
-    expect(screen.getByText('Mock Tracks')).toBeInTheDocument();
+    expect(screen.getByText('Mock Game Page')).toBeInTheDocument();
+  });
+
+  test('renderiza a página de referência fora da área autenticada', async () => {
+    authToken = null;
+    render(
+      <MemoryRouter initialEntries={['/aprende-ai-reference']} future={routerFuture}>
+        <App />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('Mock Reference')).toBeInTheDocument();
+  });
+
+  test('redireciona o índice autenticado para a experiência gamificada', async () => {
+    authToken = 'token-valido';
+    render(
+      <MemoryRouter initialEntries={['/']} future={routerFuture}>
+        <App />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('Mock Layout')).toBeInTheDocument();
+    expect(screen.getByText('Mock Game Page')).toBeInTheDocument();
   });
 });

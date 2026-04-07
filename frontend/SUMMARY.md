@@ -317,7 +317,7 @@ Toda documentação foi criada em formato Markdown:
 4. **Testes**
    - Unit tests (Vitest)
    - Component tests
-   - E2E tests (Cypress)
+   - E2E smoke tests (Playwright)
 
 5. **Analytics**
    - Page tracking

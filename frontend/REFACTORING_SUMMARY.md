@@ -249,7 +249,7 @@ export default Component;
 1. **Testes Automatizados**
    - Unit tests para componentes (Vitest)
    - Component tests (React Testing Library)
-   - E2E tests (Cypress/Playwright)
+  - E2E tests expandidos sobre a base Playwright já adicionada
 
 2. **Storybook**
    - Documentação visual de componentes

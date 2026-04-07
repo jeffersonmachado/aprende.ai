@@ -47,7 +47,31 @@ function clampStep(stepId) {
   return SCENARIO_STEPS.some((step) => step.id === stepId) ? stepId : SCENARIO_STEPS[0].id;
 }
 
-export function useScenarioEngine() {
+function applyRuntimeOverrides(runtime, overrides = {}) {
+  if (!overrides || typeof overrides !== 'object') return runtime;
+
+  const scenario = overrides.scenario
+    ? {
+        ...(runtime?.scenario || {}),
+        ...overrides.scenario
+      }
+    : runtime?.scenario || null;
+
+  const episode = overrides.scenario?.options?.length
+    ? {
+        ...(runtime?.episode || {}),
+        options: overrides.scenario.options
+      }
+    : runtime?.episode || null;
+
+  return {
+    ...runtime,
+    scenario,
+    episode
+  };
+}
+
+export function useScenarioEngine(options = {}) {
   const [engineState, setEngineState] = useState(DEFAULT_STATE);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -333,7 +357,10 @@ export function useScenarioEngine() {
         }
 
         if (!runState && primaryScenario?.id) {
-          const run = await startSimulation({ scenarioId: primaryScenario.id });
+          const run = await startSimulation({
+            scenarioId: primaryScenario.id,
+            campaignContext: options.campaignContext || null
+          });
           runId = run?.id || null;
           if (runId) {
             runState = await getSimulationState(runId);
@@ -355,12 +382,15 @@ export function useScenarioEngine() {
             ...(serverState.decisions || {})
           },
           runtime: {
-            ...previous.runtime,
-            ...(serverState.runtime || {}),
-            catalog: activeCatalog,
-            scenario: runState?.scenario || primaryScenario,
-            runId,
-            episode: runState?.episode || null
+            ...applyRuntimeOverrides({
+              ...previous.runtime,
+              ...(serverState.runtime || {}),
+              catalog: activeCatalog,
+              scenario: runState?.scenario || primaryScenario,
+              runId,
+              episode: runState?.episode || null,
+              campaignContext: runState?.run?.campaignContext || options.campaignContext || null
+            }, options.runtimeOverrides)
           },
           metrics: {
             ...previous.metrics,
@@ -380,7 +410,7 @@ export function useScenarioEngine() {
         clearTimeout(simulationTimerRef.current);
       }
     };
-  }, []);
+  }, [options.campaignContext, options.runtimeOverrides]);
 
   return {
     steps: SCENARIO_STEPS,

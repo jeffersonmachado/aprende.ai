@@ -5,6 +5,7 @@ import {
   JourneyState,
   MentorState
 } from '../../db/models/index.js';
+import { AppError } from '../../core/errors/AppError.js';
 import { recordGamificationEvent } from '../gamification/gamification.service.js';
 import {
   applyStepCompletion,
@@ -414,10 +415,23 @@ export async function registerJourneyTelemetry(tenantId, userId, payload = {}) {
   });
 
   if (!normalizedEvent.eventType) {
-    throw new Error('type é obrigatório para telemetry.');
+    throw new AppError('type é obrigatório para telemetry.', 400);
   }
 
-  await trackJourneyTelemetryEvent(tenantId, userId, normalizedEvent);
+  try {
+    await trackJourneyTelemetryEvent(tenantId, userId, normalizedEvent);
+  } catch (error) {
+    if (/eventType invalido para telemetria de jornada/i.test(String(error?.message || ''))) {
+      throw new AppError('eventType invalido para telemetria de jornada.', 400);
+    }
+
+    return {
+      ok: false,
+      trackedType: normalizedEvent.eventType,
+      trackedAt: normalizedEvent.createdAt,
+      warning: 'telemetry_persist_failed'
+    };
+  }
 
   if (state) {
     const events = [...telemetry.events, normalizedEvent].slice(-MAX_TELEMETRY_EVENTS);

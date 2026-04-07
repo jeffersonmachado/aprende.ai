@@ -1,24 +1,14 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
-const logoutMock = vi.fn();
-let mockedUser = { name: 'Admin', email: 'admin@aprende.ai' };
 const routerFuture = { v7_startTransition: true, v7_relativeSplatPath: true };
-
-vi.mock('../context/useAuth.js', () => ({
-  useAuth: () => ({
-    logout: (...args) => logoutMock(...args),
-    user: mockedUser
-  })
-}));
 
 import Layout from './Layout.jsx';
 
 describe('Layout', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedUser = { name: 'Admin', email: 'admin@aprende.ai' };
   });
 
   function renderLayout(initialEntry = '/tracks') {
@@ -26,8 +16,7 @@ describe('Layout', () => {
       <MemoryRouter initialEntries={[initialEntry]} future={routerFuture}>
         <Routes>
           <Route path="/" element={<Layout />}>
-            <Route path="tracks" element={<div>Tracks content</div>} />
-            <Route path="knowledge" element={<div>Knowledge content</div>} />
+            <Route path="aprende-ai-game" element={<div>Game content</div>} />
             <Route path="*" element={<div>Fallback content</div>} />
           </Route>
         </Routes>
@@ -35,37 +24,36 @@ describe('Layout', () => {
     );
   }
 
-  test('renderiza usuário, navegação e módulo ativo', async () => {
-    renderLayout('/tracks');
+  test('renderiza apenas o conteúdo do fluxo gamificado ativo', async () => {
+    renderLayout('/aprende-ai-game');
 
-    expect(screen.getByText('Admin')).toBeInTheDocument();
-    expect(screen.getByText('admin@aprende.ai')).toBeInTheDocument();
-    expect(screen.getAllByRole('link', { name: /Minha Jornada/i }).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByRole('link', { name: /Trilhas/i }).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText('Tracks content')).toBeInTheDocument();
+    expect(screen.getByText('Game content')).toBeInTheDocument();
   });
 
-  test('usa fallback de usuário quando não há dados', async () => {
-    mockedUser = null;
-    renderLayout('/knowledge');
+  test('não renderiza navegação lateral nem cabeçalho legado', () => {
+    renderLayout('/aprende-ai-game');
 
-    expect(screen.getByText('Usuário')).toBeInTheDocument();
-    expect(screen.getByText('Knowledge content')).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /Dashboard tecnico/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Menu' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Experiência Gamificada')).not.toBeInTheDocument();
   });
 
-  test('executa logout ao clicar em sair', () => {
-    renderLayout();
+  test('mantém o outlet funcional sem depender de contexto extra', async () => {
+    renderLayout('/aprende-ai-game');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Sair' }));
-
-    expect(logoutMock).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Game content')).toBeInTheDocument();
   });
 
-  test('usa minha jornada como módulo ativo quando rota não está mapeada', () => {
+  test('mantém o outlet funcional em rotas não mapeadas', () => {
     renderLayout('/rota-desconhecida');
 
     expect(screen.getByText('Fallback content')).toBeInTheDocument();
-    expect(screen.getAllByText('Minha Jornada').length).toBeGreaterThanOrEqual(1);
+  });
+
+  test('não injeta HUD adicional sobre o clone', () => {
+    renderLayout('/aprende-ai-game');
+
+    expect(screen.queryByText(/Nível/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/XP/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Streak/i)).not.toBeInTheDocument();
   });
 });

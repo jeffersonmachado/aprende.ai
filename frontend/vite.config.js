@@ -12,10 +12,24 @@ export default defineConfig({
   plugins: [react()],
   server: { port: 5176, strictPort: true },
   define: { __API_BASE__: JSON.stringify(apiBase) },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+          if (id.includes('react-router-dom') || id.includes('/react-router/')) return 'router';
+          if (id.includes('framer-motion')) return 'motion';
+          if (id.includes('@testing-library')) return 'testing';
+          if (id.includes('react') || id.includes('scheduler')) return 'react-vendor';
+        }
+      }
+    }
+  },
   test: {
     environment: 'jsdom',
     globals: true,
     setupFiles: './src/test/setupTests.js',
+    exclude: ['e2e/**', 'node_modules/**', 'dist/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],

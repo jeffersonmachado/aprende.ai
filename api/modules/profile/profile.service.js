@@ -36,6 +36,19 @@ function buildDefaultJourneySteps(journeyShape) {
   ];
 }
 
+function buildDefaultCampaignProgress() {
+  return {
+    chapterId: 'capitulo-1',
+    phaseId: 'missao',
+    totalPhases: 4,
+    totalChapters: 2,
+    unlockedChapterIds: ['capitulo-1'],
+    completedPhaseKeys: [],
+    visitedPhaseKeys: ['capitulo-1:missao'],
+    updatedAt: new Date().toISOString()
+  };
+}
+
 export async function getProfileOverview(tenantId, userId) {
   const [profile, goal, style, journeyState] = await Promise.all([
     LearnerProfile.findOne({ where: { tenantId, userId } }),
@@ -186,7 +199,8 @@ export async function saveOnboarding(tenantId, userId, payload) {
     stateJson: {
       lastAction: 'onboarding_completed',
       suggestedNextScenario: journeyShape.scenarios?.[0] || null,
-      adaptiveDifficulty: journeyShape.difficulty
+      adaptiveDifficulty: journeyShape.difficulty,
+      campaignProgress: buildDefaultCampaignProgress()
     }
   });
 

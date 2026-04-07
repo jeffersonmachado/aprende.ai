@@ -85,14 +85,39 @@ npm install
 npm run dev
 ```
 
+## Testes
+
+```bash
+npm run test
+npm run test:e2e
+npm run validate
+```
+
+- `npm run test` executa API + frontend unit/integration.
+- `npm run test:e2e` executa o smoke browser do frontend com Playwright.
+- `npm run validate` mantém o pipeline rápido do workspace com build do frontend e suítes unit/integration.
+
+Estrutura atual dos E2E do frontend:
+
+- `frontend/e2e/campaign-core.spec.js`: fluxo principal da campanha e desbloqueio de próximo capítulo.
+- `frontend/e2e/navigation.spec.js`: navegação autenticada para mapa da jornada e dashboard de competências.
+- `frontend/e2e/resilience.spec.js`: sessão expirada, erro de competências e falha do runtime principal.
+
+No frontend, o primeiro setup do Playwright também requer:
+
+```bash
+cd frontend
+npx playwright install chromium
+```
+
 ## Scripts no diretório raiz
 
 ```bash
 npm run dev:api
 npm run dev:frontend
-npm run db:migrate
-npm run db:seed
-npm run build:frontend
+npm run test
+npm run test:e2e
+npm run validate
 ```
 
 ## O que esta versão entrega
@@ -124,6 +149,12 @@ Na prática:
 
 ## Observações
 
-Este pacote é um **scaffold funcional de referência**, com código-fonte completo do projeto.
+Este repositório já foi consolidado além do scaffold inicial e hoje entrega:
 
-Ele **não inclui `node_modules`** nem build final gerado, e eu **não executei `npm install`, migrations ou os servidores** neste ambiente. A base de IA, RAG e integração está pronta em nível estrutural, mas ainda não representa a implementação final de produção.
+- runtime oficial de campanha com backend como autoridade de estado
+- `journey-engine` operacional com sete fases explícitas
+- dashboard oficial de competências
+- mapa da jornada dedicado
+- cobertura automatizada de API, frontend e suíte E2E Playwright segmentada por domínio
+
+O pacote continua sem `node_modules` versionado, mas a base atual já foi validada localmente com build, suítes automatizadas e navegação E2E em navegador real.

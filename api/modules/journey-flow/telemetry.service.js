@@ -4,11 +4,16 @@ import { IntegrationEvent, JourneyEvent } from '../../db/models/index.js';
 const VALID_EVENT_TYPES = new Set([
   'step_selected',
   'step_completed',
+  'chapter_unlocked',
+  'chapter_completed',
   'reward_unlocked',
   'reward_claimed',
   'level_up',
   'journey_synced',
-  'mentor_message'
+  'mentor_message',
+  'plot_twist_triggered',
+  'plot_twist_resolved',
+  'journey_resumed'
 ]);
 
 function asNumber(value, fallback = 0) {
@@ -63,7 +68,9 @@ export async function persistTelemetryEvent(event) {
   await IntegrationEvent.create({
     id: event.id,
     tenantId: event.tenantId,
+    provider: 'aprende-ai',
     sourceSystem: 'journey-flow',
+    eventName: event.eventType,
     eventType: `journey.${event.eventType}`,
     direction: 'inbound',
     status: 'processed',

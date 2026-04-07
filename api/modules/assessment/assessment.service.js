@@ -6,11 +6,41 @@ import {
   AssessmentEvaluation,
   AssessmentQuestion,
   AssessmentSubmission,
+  Competency,
   CompetencyEvidence
 } from '../../db/models/index.js';
 import { AppError } from '../../core/errors/AppError.js';
 import { chatCompletion } from '../../core/ai/chatCompletion.js';
 import { recordGamificationEvent } from '../gamification/gamification.service.js';
+import { upsertUserCompetencyScore } from '../competency/competency.service.js';
+
+async function resolveCompetencyReference(tenantId, competencyReference) {
+  if (!competencyReference) return null;
+
+  const directById = await Competency.findOne({ where: { tenantId, id: competencyReference } }).catch(() => null);
+  if (directById) return directById;
+
+  const normalizedName = String(competencyReference || '').trim();
+  if (!normalizedName) return null;
+
+  const [competency] = await Competency.findOrCreate({
+    where: { tenantId, name: normalizedName },
+    defaults: {
+      id: uuidv4(),
+      tenantId,
+      name: normalizedName,
+      type: 'comportamental',
+      dimensionsJson: [
+        { name: 'K', weight: 0.25, description: 'Conhecimento estruturado' },
+        { name: 'A', weight: 0.35, description: 'Aplicacao pratica' },
+        { name: 'J', weight: 0.25, description: 'Julgamento' },
+        { name: 'C', weight: 0.15, description: 'Consistencia' }
+      ]
+    }
+  });
+
+  return competency;
+}
 export async function listAssessments(tenantId) { return Assessment.findAll({ where: { tenantId }, order: [['createdAt', 'DESC']] }); }
 export async function getAssessment(tenantId, id) {
   const assessment = await Assessment.findOne({ where: { tenantId, id }, include: [{ model: AssessmentQuestion, as: 'questions' }] });
@@ -88,14 +118,16 @@ export async function submitAttempt(tenantId, attemptId, answers = []) {
 }
 
 export async function evaluateSubmissionWithAI({ tenantId, userId, assessmentId, answers }) {
+  const campaignContext = answers?.[0]?.campaignContext || null;
   const prompt = [
     `Tenant: ${tenantId}`,
     `Usuário: ${userId}`,
     `Assessment: ${assessmentId || 'n/a'}`,
     'Respostas do aprendiz:',
     JSON.stringify(answers, null, 2),
+    campaignContext ? `Contexto de campanha: ${JSON.stringify(campaignContext, null, 2)}` : null,
     'Avalie de 0 a 10 e responda em JSON com as chaves: score, feedback, recommendation, nextStepSuggestion.'
-  ].join('\n');
+  ].filter(Boolean).join('\n');
 
   const completion = await chatCompletion({
     systemPrompt: 'Você é avaliador pedagógico do aprende.ai. Responda apenas JSON válido.',
@@ -126,6 +158,9 @@ export async function evaluateSubmissionWithAI({ tenantId, userId, assessmentId,
 }
 
 export async function evaluateAssessment(tenantId, userId, payload) {
+  const campaignContext = payload?.answers?.[0]?.campaignContext || null;
+  const simulationRunId = payload?.simulationRunId ? String(payload.simulationRunId).trim() : null;
+  const competency = await resolveCompetencyReference(tenantId, payload.competencyId || campaignContext?.chapterFocus || null);
   const result = await evaluateSubmissionWithAI({
     tenantId,
     userId,
@@ -140,7 +175,11 @@ export async function evaluateAssessment(tenantId, userId, payload) {
     assessmentId: payload.assessmentId || null,
     assessmentAttemptId: null,
     submissionText: payload.textAnswer || null,
-    submissionJson: payload,
+    submissionJson: {
+      ...payload,
+      campaignContext,
+      simulationRunId,
+    },
     aiScore: result.score,
     aiFeedback: result.feedback,
     recommendation: result.recommendation,
@@ -151,7 +190,7 @@ export async function evaluateAssessment(tenantId, userId, payload) {
     id: uuidv4(),
     tenantId,
     userId,
-    competencyId: payload.competencyId || null,
+    competencyId: competency?.id || null,
     sourceType: 'assessment',
     sourceId: submission.id,
     evidenceText: result.feedback,
@@ -161,6 +200,22 @@ export async function evaluateAssessment(tenantId, userId, payload) {
       nextStepSuggestion: result.nextStepSuggestion
     }
   });
+
+  if (competency?.id) {
+    await upsertUserCompetencyScore(tenantId, userId, competency.id, (Number(result.score || 0) - 5) * 1.6, {
+      sourceType: 'assessment',
+      evidenceType: 'direct',
+      feedback: result.feedback,
+      narrative: result.recommendation,
+      impact: {
+        assertividade: Number(result.score || 0) - 5,
+        analise_risco: (Number(result.score || 0) - 5) * 0.8,
+        consistencia: 1,
+        velocidade: 0
+      },
+      createdAt: new Date().toISOString()
+    });
+  }
 
   await recordGamificationEvent(tenantId, userId, {
     eventType: 'assessment_correct',

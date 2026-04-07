@@ -3,6 +3,12 @@ import { Gem } from 'lucide-react';
 import { rewardBurst } from '../../lib/motion/index.js';
 import { rarityClass } from './journeyEngine.utils.js';
 
+function getUnlockedRewardLabel(item) {
+  if (typeof item === 'string' || typeof item === 'number') return String(item);
+  if (!item || typeof item !== 'object') return 'recompensa';
+  return item.title || item.name || item.label || item.code || item.id || 'recompensa';
+}
+
 export default function JourneyRewardPanel({ selectedReward, unlocked = [] }) {
   const rarity = selectedReward?.rarity || 'common';
 
@@ -50,7 +56,7 @@ export default function JourneyRewardPanel({ selectedReward, unlocked = [] }) {
       </AnimatePresence>
 
       {unlocked.length > 0 ? (
-        <p className="mt-2 text-xs font-semibold text-rose-700">Desbloqueado: {unlocked.join(', ')}</p>
+        <p className="mt-2 text-xs font-semibold text-rose-700">Desbloqueado: {unlocked.map((item) => getUnlockedRewardLabel(item)).join(', ')}</p>
       ) : null}
       {selectedReward?.rarity ? (
         <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-muted-700">Raridade: {selectedReward.rarity}</p>

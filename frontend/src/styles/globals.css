@@ -2,6 +2,13 @@
 
 /* Custom color tokens — required for Tailwind v4 (CSS-first config) */
 @theme {
+  --font-display: "Sora", "Space Grotesk", "Avenir Next", sans-serif;
+  --surface-base: #090816;
+  --surface-panel: rgba(17, 14, 33, 0.88);
+  --campaign-glow-pink: rgba(244, 114, 182, 0.34);
+  --campaign-glow-blue: rgba(56, 189, 248, 0.24);
+  --campaign-glow-orange: rgba(249, 115, 22, 0.28);
+
   /* Primary (pink/rose) */
   --color-primary-50: #fdf2f8;
   --color-primary-100: #fce7f3;
@@ -106,16 +113,26 @@
     scroll-behavior: smooth;
   }
 
+  :root {
+    background: var(--surface-base);
+  }
+
   body {
-    background-color: white;
+    background-color: var(--surface-base);
     color: rgb(17, 24, 39);
+    font-family: var(--font-display);
     transition-property: color, background-color;
     transition-duration: 300ms;
   }
 
   body.dark {
-    background-color: rgb(10, 10, 10);
+    background-color: var(--surface-base);
     color: rgb(249, 250, 251);
+  }
+
+  ::selection {
+    background: rgba(244, 114, 182, 0.32);
+    color: rgb(255, 244, 250);
   }
 
   * {

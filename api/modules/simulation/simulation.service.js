@@ -123,6 +123,73 @@ async function getUserLearningContext(tenantId, userId) {
   return { userProfile, learningGoal, learningStyle };
 }
 
+function normalizeCampaignRunContext(input = {}) {
+  if (!input || typeof input !== 'object') return null;
+
+  const chapterId = String(input.chapterId || '').trim();
+  const phaseId = String(input.phaseId || '').trim();
+
+  if (!chapterId || !phaseId) {
+    return null;
+  }
+
+  return {
+    chapterId,
+    phaseId,
+    chapterTitle: input.chapterTitle ? String(input.chapterTitle).trim() : null,
+    phaseTitle: input.phaseTitle ? String(input.phaseTitle).trim() : null,
+    scenarioTitle: input.scenarioTitle ? String(input.scenarioTitle).trim() : null,
+    source: input.source ? String(input.source).trim() : 'campaign',
+    startedAt: input.startedAt || new Date().toISOString()
+  };
+}
+
+async function upsertSimulationRunCampaignContext(tenantId, userId, runId, context) {
+  if (!runId || !context) return null;
+
+  const [journeyState] = await JourneyState.findOrCreate({
+    where: { tenantId, userId },
+    defaults: {
+      id: uuidv4(),
+      tenantId,
+      userId,
+      journeyPlanId: null,
+      currentStepId: null,
+      progressPercent: 0,
+      stateJson: {}
+    }
+  });
+
+  const previousStateJson = journeyState.stateJson || {};
+  const previousRuns = previousStateJson.campaignScenarioRuns || {};
+  const nextRuns = {
+    ...previousRuns,
+    [runId]: {
+      ...(previousRuns[runId] || {}),
+      ...context,
+      runId,
+      updatedAt: new Date().toISOString()
+    }
+  };
+
+  await journeyState.update({
+    lastEventAt: new Date(),
+    stateJson: {
+      ...previousStateJson,
+      campaignScenarioRuns: nextRuns
+    }
+  });
+
+  return nextRuns[runId];
+}
+
+async function getSimulationRunCampaignContext(tenantId, userId, runId) {
+  if (!runId) return null;
+
+  const state = await JourneyState.findOne({ where: { tenantId, userId } });
+  return state?.stateJson?.campaignScenarioRuns?.[runId] || null;
+}
+
 async function ensureAdaptiveScenarioForUser(tenantId, userId) {
   const { userProfile, learningGoal, learningStyle } = await getUserLearningContext(tenantId, userId);
   const apiKey = await getTenantOpenAIKey(tenantId);
@@ -242,7 +309,7 @@ export async function startSimulation(tenantId, userId, payload) {
 
   const journeyPlan = await JourneyPlan.findOne({ where: { tenantId, userId, status: 'active' }, order: [['createdAt', 'DESC']] });
 
-  return SimulationRun.create({
+  const run = await SimulationRun.create({
     id: uuidv4(),
     tenantId,
     userId,
@@ -252,6 +319,20 @@ export async function startSimulation(tenantId, userId, payload) {
     startedAt: new Date(),
     totalScore: 0
   });
+
+  const campaignContext = normalizeCampaignRunContext({
+    ...(payload.campaignContext || {}),
+    scenarioTitle: payload?.campaignContext?.scenarioTitle || scenario.title,
+    startedAt: new Date().toISOString(),
+    status: 'active'
+  });
+
+  const persistedContext = await upsertSimulationRunCampaignContext(tenantId, userId, run.id, campaignContext);
+
+  return {
+    ...run.toJSON(),
+    campaignContext: persistedContext
+  };
 }
 
 export async function getSimulationState(tenantId, userId, runId) {
@@ -269,8 +350,13 @@ export async function getSimulationState(tenantId, userId, runId) {
     order: [['createdAt', 'ASC']]
   });
 
+  const campaignContext = await getSimulationRunCampaignContext(tenantId, userId, run.id);
+
   return {
-    run,
+    run: {
+      ...run.toJSON(),
+      campaignContext
+    },
     scenario,
     episode: {
       ...episode.toJSON(),
@@ -282,6 +368,8 @@ export async function getSimulationState(tenantId, userId, runId) {
 export async function submitDecision(tenantId, userId, runId, payload) {
   const run = await SimulationRun.findOne({ where: { id: runId, tenantId, userId } });
   if (!run) throw new AppError('Execução de simulação não encontrada', 404);
+
+  const runCampaignContext = await getSimulationRunCampaignContext(tenantId, userId, run.id);
 
   const option = await DecisionOption.findOne({ where: { id: payload.selectedOptionId, tenantId } });
   if (!option) throw new AppError('Opção de decisão não encontrada', 404);
@@ -334,7 +422,9 @@ export async function submitDecision(tenantId, userId, runId, payload) {
     metadata: {
       scoreDelta,
       feedbackStyle,
-      optionId: option.id
+      optionId: option.id,
+      chapterId: runCampaignContext?.chapterId || null,
+      phaseId: runCampaignContext?.phaseId || null
     }
   });
 
@@ -371,6 +461,7 @@ export async function submitDecision(tenantId, userId, runId, payload) {
       selectedOption: option.label,
       feedback,
       impact,
+      campaignContext: runCampaignContext,
       createdAt: new Date().toISOString()
     };
 
@@ -415,6 +506,7 @@ export async function submitDecision(tenantId, userId, runId, payload) {
   const allRuns = await SimulationRun.count({ where: { tenantId, userId } });
   const progressPercent = allRuns ? Math.min(100, (completedRuns / allRuns) * 100) : 0;
   const previousStateJson = journeyState.stateJson || {};
+  const previousScenarioRuns = previousStateJson.campaignScenarioRuns || {};
   const reachedJourneyCompletion = progressPercent >= 100;
   const shouldAwardJourneyCompletion = reachedJourneyCompletion && !previousStateJson.journeyCompletionAwardedAt;
 
@@ -441,6 +533,19 @@ export async function submitDecision(tenantId, userId, runId, payload) {
     lastEventAt: new Date(),
     stateJson: {
       ...previousStateJson,
+      campaignScenarioRuns: runCampaignContext
+        ? {
+            ...previousScenarioRuns,
+            [run.id]: {
+              ...(previousScenarioRuns[run.id] || {}),
+              ...runCampaignContext,
+              completedAt: new Date().toISOString(),
+              scoreDelta: Number(scoreDelta || 0),
+              totalScore: Number(run.totalScore || 0),
+              status: 'completed'
+            }
+          }
+        : previousScenarioRuns,
       lastAction: 'decision_submitted',
       lastFeedback: feedback,
       adaptiveDifficulty: nextDifficulty,
@@ -456,7 +561,18 @@ export async function submitDecision(tenantId, userId, runId, payload) {
   });
 
   return {
-    run,
+    run: {
+      ...run.toJSON(),
+      campaignContext: runCampaignContext
+        ? {
+            ...runCampaignContext,
+            completedAt: new Date().toISOString(),
+            scoreDelta: Number(scoreDelta || 0),
+            totalScore: Number(run.totalScore || 0),
+            status: 'completed'
+          }
+        : null
+    },
     feedback,
     scoreDelta,
     competencyUpdates,

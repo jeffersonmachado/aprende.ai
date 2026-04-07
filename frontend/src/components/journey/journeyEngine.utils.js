@@ -97,15 +97,15 @@ export function buildPath(steps) {
 
 export function statusClasses(status) {
   if (status === 'completed') {
-    return 'border-emerald-300 bg-emerald-50 text-emerald-800 shadow-md';
+    return 'border-emerald-300/70 bg-emerald-200/15 text-emerald-100 shadow-md';
   }
   if (status === 'active') {
-    return 'border-rose-300 bg-white text-rose-700 shadow-glow';
+    return 'border-rose-300/80 bg-rose-300/12 text-rose-50 shadow-glow';
   }
   if (status === 'available') {
-    return 'border-orange-200 bg-white text-orange-700 shadow-soft';
+    return 'border-orange-300/60 bg-orange-200/10 text-orange-100 shadow-soft';
   }
-  return 'border-muted-200/80 bg-muted-100/80 text-muted-400 opacity-75 backdrop-blur-sm';
+  return 'border-slate-400/30 bg-slate-900/35 text-slate-300/70 opacity-80 backdrop-blur-sm';
 }
 
 export function rarityClass(rarity) {

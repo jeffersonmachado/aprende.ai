@@ -17,11 +17,13 @@ export function createApp() {
   }));
   app.use(express.json({ limit: '2mb' }));
   app.use((req, res, next) => {
-    if (req.path === '/health') return next();
-    if (req.path === '/auth/login' || req.path === '/api/auth/login') {
+    const normalizedPath = req.path.replace(/\/+$/, '') || '/';
+
+    if (normalizedPath === '/health') return next();
+    if (normalizedPath.endsWith('/auth/login')) {
       return tenantResolver(req, res, next);
     }
-    if (req.path === '/auth/me' || req.path === '/api/auth/me' || req.path.startsWith('/api')) {
+    if (normalizedPath.endsWith('/auth/me') || normalizedPath.includes('/api/')) {
       return tenantResolver(req, res, (err) => {
         if (err) return next(err);
         return authMiddleware(req, res, (authErr) => {

@@ -11,9 +11,24 @@ NC='\033[0m'
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT_NAME="$(basename "$PROJECT_DIR")"
+PROJECT_VERSION="$(node -p "require('$PROJECT_DIR/package.json').version || '0.0.0'")"
+GIT_COMMIT="$(git -C "$PROJECT_DIR" rev-parse --short HEAD 2>/dev/null || true)"
+GIT_BRANCH="$(git -C "$PROJECT_DIR" branch --show-current 2>/dev/null || true)"
+RELEASE_NOTES_FILE_REL="docs/release-notes.md"
+RELEASE_NOTES_FILE="$PROJECT_DIR/$RELEASE_NOTES_FILE_REL"
+if [[ -n "$(git -C "$PROJECT_DIR" status --short 2>/dev/null || true)" ]]; then
+  GIT_DIRTY=true
+else
+  GIT_DIRTY=false
+fi
+if [[ -n "$GIT_COMMIT" && "$GIT_DIRTY" == false ]]; then
+  PUBLISH_READY=true
+else
+  PUBLISH_READY=false
+fi
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 DEFAULT_OUTPUT_DIR="$PROJECT_DIR/dist"
-DEFAULT_ZIP_NAME="${PROJECT_NAME}-${TIMESTAMP}.zip"
+DEFAULT_ZIP_NAME="${PROJECT_NAME}-v${PROJECT_VERSION}-${TIMESTAMP}.zip"
 
 OUTPUT_DIR="$DEFAULT_OUTPUT_DIR"
 ZIP_NAME="$DEFAULT_ZIP_NAME"
@@ -210,8 +225,16 @@ if [[ ! -f "$ZIP_FILE" ]]; then
 fi
 
 FILE_SIZE="$(du -h "$ZIP_FILE" | cut -f1)"
+if stat --version >/dev/null 2>&1; then
+  FILE_SIZE_BYTES="$(stat -c%s "$ZIP_FILE")"
+else
+  FILE_SIZE_BYTES="$(stat -f%z "$ZIP_FILE")"
+fi
 FILE_COUNT="n/d"
 TYPE_STATS=""
+FILE_SHA256=""
+SHA256_FILE="${ZIP_FILE}.sha256"
+MANIFEST_FILE="${ZIP_FILE}.manifest.json"
 if command -v unzip >/dev/null 2>&1; then
   ZIP_LIST="$(unzip -Z1 "$ZIP_FILE")"
   FILE_COUNT="$(printf '%s\n' "$ZIP_LIST" | wc -l | tr -d ' ')"
@@ -229,10 +252,122 @@ if command -v unzip >/dev/null 2>&1; then
   ' | sort -rn | head -10)"
 fi
 
+if command -v sha256sum >/dev/null 2>&1; then
+  FILE_SHA256="$(sha256sum "$ZIP_FILE" | awk '{print $1}')"
+elif command -v shasum >/dev/null 2>&1; then
+  FILE_SHA256="$(shasum -a 256 "$ZIP_FILE" | awk '{print $1}')"
+fi
+
+if [[ -n "$FILE_SHA256" ]]; then
+  printf '%s  %s\n' "$FILE_SHA256" "$(basename "$ZIP_FILE")" > "$SHA256_FILE"
+fi
+
+RELEASE_NOTES_SUMMARY=""
+RELEASE_NOTES_ITEMS_JSON='[]'
+if [[ -f "$RELEASE_NOTES_FILE" ]]; then
+  RELEASE_NOTES_SUMMARY="$(node - <<'EOF' "$RELEASE_NOTES_FILE" "$PROJECT_VERSION"
+const fs = require('fs');
+
+const [filePath, version] = process.argv.slice(2);
+const content = fs.readFileSync(filePath, 'utf8');
+const lines = content.split(/\r?\n/);
+const target = `## ${version}`;
+let start = lines.findIndex((line) => line.trim() === target);
+if (start === -1) {
+  start = lines.findIndex((line) => /^##\s+/.test(line));
+}
+
+if (start === -1) {
+  process.stdout.write('');
+  process.exit(0);
+}
+
+const collected = [];
+for (let index = start + 1; index < lines.length; index += 1) {
+  const line = lines[index];
+  if (/^##\s+/.test(line)) {
+    break;
+  }
+  if (!line.trim()) {
+    continue;
+  }
+  if (/^[-*]\s+/.test(line.trim())) {
+    collected.push(line.trim().replace(/^[-*]\s+/, ''));
+  } else {
+    collected.push(line.trim());
+  }
+}
+
+process.stdout.write(collected.join(' | ').slice(0, 1200));
+EOF
+)"
+
+  RELEASE_NOTES_ITEMS_JSON="$(node - <<'EOF' "$RELEASE_NOTES_FILE" "$PROJECT_VERSION"
+const fs = require('fs');
+
+const [filePath, version] = process.argv.slice(2);
+const content = fs.readFileSync(filePath, 'utf8');
+const lines = content.split(/\r?\n/);
+const target = `## ${version}`;
+let start = lines.findIndex((line) => line.trim() === target);
+if (start === -1) {
+  start = lines.findIndex((line) => /^##\s+/.test(line));
+}
+
+if (start === -1) {
+  process.stdout.write('[]');
+  process.exit(0);
+}
+
+const items = [];
+for (let index = start + 1; index < lines.length; index += 1) {
+  const line = lines[index];
+  if (/^##\s+/.test(line)) {
+    break;
+  }
+  if (!line.trim()) {
+    continue;
+  }
+  if (/^[-*]\s+/.test(line.trim())) {
+    items.push(line.trim().replace(/^[-*]\s+/, ''));
+  }
+}
+
+process.stdout.write(JSON.stringify(items));
+EOF
+)"
+fi
+
+cat > "$MANIFEST_FILE" <<EOF
+{
+  "project": "${PROJECT_NAME}",
+  "version": "${PROJECT_VERSION}",
+  "gitCommit": "${GIT_COMMIT}",
+  "gitBranch": "${GIT_BRANCH}",
+  "gitDirty": ${GIT_DIRTY},
+  "publishReady": ${PUBLISH_READY},
+  "releaseNotesFile": "${RELEASE_NOTES_FILE_REL}",
+  "releaseNotesSummary": $(node -p "JSON.stringify(process.argv[1])" "$RELEASE_NOTES_SUMMARY"),
+  "releaseNotesItems": ${RELEASE_NOTES_ITEMS_JSON},
+  "artifact": "$(basename "$ZIP_FILE")",
+  "checksumFile": "$(basename "$SHA256_FILE")",
+  "sizeBytes": ${FILE_SIZE_BYTES},
+  "sizeHuman": "${FILE_SIZE}",
+  "fileCount": ${FILE_COUNT},
+  "sha256": "${FILE_SHA256}",
+  "generatedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+}
+EOF
+
 echo -e "${GREEN}OK ZIP gerado com sucesso!${NC}"
 echo "Arquivo: $ZIP_FILE"
 echo "Tamanho: $FILE_SIZE"
 echo "Arquivos: $FILE_COUNT"
+if [[ -n "$FILE_SHA256" ]]; then
+  echo "SHA-256: $FILE_SHA256"
+  echo "Arquivo SHA-256: $SHA256_FILE"
+fi
+echo "Manifesto: $MANIFEST_FILE"
 if [[ -n "$TYPE_STATS" ]]; then
   echo "Top tipos:"
   printf '%s\n' "$TYPE_STATS" | awk -F'\t' '{ printf "  - %s: %s\n", $2, $1 }'

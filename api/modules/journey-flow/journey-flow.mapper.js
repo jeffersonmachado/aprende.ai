@@ -12,7 +12,13 @@ const EVENT_ALIAS = {
   journey_step_completed: 'step_completed',
   journey_reward_claimed: 'reward_claimed',
   journey_state_sync: 'journey_synced',
-  journey_completion_transition: 'journey_synced'
+  journey_completion_transition: 'journey_synced',
+  gamified_onboarding_selected: 'step_selected',
+  gamified_map_opened: 'journey_synced',
+  gamified_mission_selected: 'step_selected',
+  gamified_plot_selected: 'step_selected',
+  gamified_dashboard_opened: 'journey_synced',
+  gamified_result_opened: 'journey_synced'
 };
 
 export function mapFrontendToBackend(payload = {}) {

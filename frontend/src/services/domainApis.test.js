@@ -15,6 +15,15 @@ import { getJourneySummary } from './journeyApi.js';
 import { getSimulationCatalog, getSimulationState, startSimulation, submitDecision } from './simulationApi.js';
 import { sendMentorMessage } from './mentorApi.js';
 import { evaluateAssessment } from './assessmentApi.js';
+import {
+  finalizeJourneyEnginePhase,
+  getJourneyEngineCompetencies,
+  getJourneyEngineRuntime,
+  resolveJourneyEngineTwist,
+  startJourneyEnginePhase,
+  submitJourneyEngineDecision,
+  submitJourneyEngineReflection
+} from './journeyEngineApi.js';
 
 describe('domain api wrappers', () => {
   beforeEach(() => {
@@ -51,7 +60,7 @@ describe('domain api wrappers', () => {
   test('mentorApi usa endpoint esperado', async () => {
     apiPostMock.mockResolvedValueOnce({ reply: 'ok' });
     await sendMentorMessage('Oi');
-    expect(apiPostMock).toHaveBeenCalledWith('/api/mentor/message', { message: 'Oi' });
+    expect(apiPostMock).toHaveBeenCalledWith('/api/mentor/message', { message: 'Oi', mode: undefined, context: null });
   });
 
   test('assessmentApi usa endpoint esperado', async () => {
@@ -59,5 +68,26 @@ describe('domain api wrappers', () => {
     const payload = { answers: [] };
     await evaluateAssessment(payload);
     expect(apiPostMock).toHaveBeenCalledWith('/api/assessment/evaluate', payload);
+  });
+
+  test('journeyEngineApi usa endpoints esperados', async () => {
+    apiGetMock.mockResolvedValue({});
+    apiPostMock.mockResolvedValue({});
+
+    await getJourneyEngineRuntime();
+    await startJourneyEnginePhase('briefing', { chapterId: 'capitulo-1' });
+    await submitJourneyEngineDecision({ choiceId: 'choice-1' });
+    await resolveJourneyEngineTwist({ resolutionNotes: 'ok' });
+    await submitJourneyEngineReflection({ reflectionText: 'aprendizado' });
+    await finalizeJourneyEnginePhase({ chapterId: 'capitulo-1' });
+    await getJourneyEngineCompetencies();
+
+    expect(apiGetMock).toHaveBeenNthCalledWith(1, '/api/journey-engine/runtime');
+    expect(apiPostMock).toHaveBeenNthCalledWith(1, '/api/journey-engine/phases/briefing/start', { chapterId: 'capitulo-1' });
+    expect(apiPostMock).toHaveBeenNthCalledWith(2, '/api/journey-engine/decision', { choiceId: 'choice-1' });
+    expect(apiPostMock).toHaveBeenNthCalledWith(3, '/api/journey-engine/twist/resolve', { resolutionNotes: 'ok' });
+    expect(apiPostMock).toHaveBeenNthCalledWith(4, '/api/journey-engine/reflection', { reflectionText: 'aprendizado' });
+    expect(apiPostMock).toHaveBeenNthCalledWith(5, '/api/journey-engine/finalize', { chapterId: 'capitulo-1' });
+    expect(apiGetMock).toHaveBeenNthCalledWith(2, '/api/journey-engine/competencies');
   });
 });

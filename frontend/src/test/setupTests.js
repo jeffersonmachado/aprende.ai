@@ -2,6 +2,10 @@ import '@testing-library/jest-dom/vitest';
 import React from 'react';
 import { vi } from 'vitest';
 
+if (typeof window !== 'undefined') {
+  window.scrollTo = vi.fn();
+}
+
 // Mock framer-motion: animações são imediatas/desativadas em ambiente de testes
 vi.mock('framer-motion', () => {
   const MotionComponent = React.forwardRef(({ children, ...props }, ref) => {

@@ -48,6 +48,18 @@ function buildContextBlock(ctx) {
   lines.push(`Sinal emocional detectado na mensagem: ${ctx.emotionalSignal}`);
   lines.push(`Modo preferencial do mentor: ${ctx.preferredMode}`);
   lines.push(`Diretriz do modo: ${ctx.modeGuidance}`);
+  if (ctx.campaignContext?.missionTitle) {
+    lines.push(`Missão da campanha: ${ctx.campaignContext.missionTitle}`);
+  }
+  if (ctx.campaignContext?.chapterFocus) {
+    lines.push(`Foco do capítulo: ${ctx.campaignContext.chapterFocus}`);
+  }
+  if (ctx.campaignContext?.objective) {
+    lines.push(`Objetivo do capítulo: ${ctx.campaignContext.objective}`);
+  }
+  if (ctx.campaignContext?.phaseLabel) {
+    lines.push(`Fase da campanha: ${ctx.campaignContext.phaseLabel}`);
+  }
   return lines.join('\n');
 }
 
@@ -145,7 +157,8 @@ export async function sendMentorMessage(tenantId, userId, payload) {
     recentDecision,
     preferredMode,
     modeGuidance: MENTOR_MODE_GUIDANCE[preferredMode],
-    emotionalSignal
+    emotionalSignal,
+    campaignContext: payload?.context || null
   };
 
   const response = await chatCompletion({
@@ -153,6 +166,7 @@ export async function sendMentorMessage(tenantId, userId, payload) {
       'Você é mentor coach do aprende.ai.',
       'Responda em português do Brasil, com objetividade, empatia e foco em progressão.',
       'Considere contexto real de progresso, gamificação e histórico recente para orientar uma próxima ação concreta.',
+      'Se houver contexto de campanha, trate-o como prioridade de leitura e use a competência focal para concretizar a orientação.',
       'Retorne APENAS JSON válido com as chaves: situationalRead, performanceFeedback, positiveReinforcement, reflectionPrompt, nextAction, relatedCompetency, mentorMode.',
       `Modo preferencial do mentor: ${preferredMode}.`
     ].join(' '),
