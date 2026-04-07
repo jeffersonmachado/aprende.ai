@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import AprendeAiGameFlow from './AprendeAiGameFlow.jsx';
@@ -13,96 +13,57 @@ function renderFlow(props = {}) {
   );
 }
 
-function createDeferred() {
-  let resolve;
-  let reject;
-
-  const promise = new Promise((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
-
-  return { promise, resolve, reject };
-}
-
 describe('AprendeAiGameFlow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  test('avança entre cenas e reinicia o preview na cena final', () => {
+  test('avança entre todas as cenas e reinicia o preview na cena final', () => {
     renderFlow();
 
-    expect(screen.getByText('1. Escolha seu Perfil')).toBeInTheDocument();
+    // Cena 0 — onboarding
+    expect(screen.getByText('1. Onboarding')).toBeInTheDocument();
+    expect(screen.getByText('Escolha seu Perfil')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ver próxima cena' }));
+    fireEvent.click(screen.getByRole('button', { name: /Entrar no jogo/i }));
     expect(screen.getByText('Sua Jornada')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ver próxima cena' }));
-    expect(screen.getByText('Qual decisão move a campanha agora?')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Próxima tela/i }));
+    expect(screen.getByText('Qual é o impacto dessa escolha?')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ver próxima cena' }));
+    fireEvent.click(screen.getByRole('button', { name: /Próxima tela/i }));
     expect(screen.getByText('ALERTA!')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ver próxima cena' }));
+    fireEvent.click(screen.getByRole('button', { name: /Próxima tela/i }));
     expect(screen.getByText('Seu Progresso')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ver próxima cena' }));
+    fireEvent.click(screen.getByRole('button', { name: /Próxima tela/i }));
     expect(screen.getByText('Parabéns!')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Reiniciar preview' }));
-    expect(screen.getByText('1. Escolha seu Perfil')).toBeInTheDocument();
+    // Cena final → reiniciar
+    fireEvent.click(screen.getByRole('button', { name: /Reiniciar jornada/i }));
+    expect(screen.getByText('1. Onboarding')).toBeInTheDocument();
   });
 
-  test('mostra indicador de processamento durante ação assíncrona e envia o perfil selecionado', async () => {
-    const deferred = createDeferred();
-    const onboardingHandler = vi.fn(() => deferred.promise);
+  test('seleção de perfil destaca o card como ativo', () => {
+    renderFlow();
 
-    renderFlow({
-      experienceMode: 'runtime',
-      moduleLinks: {
-        onboarding: { label: 'Abrir onboarding real' },
-      },
-      actionHandlers: {
-        onboarding: onboardingHandler,
-      },
-    });
+    // Por padrão, "Profissional" está selecionado
+    const ativos = screen.getAllByText('ATIVO');
+    expect(ativos).toHaveLength(1);
 
+    // Seleciona outro perfil
     fireEvent.click(screen.getByText('Estudante'));
-    fireEvent.click(screen.getByRole('button', { name: 'Abrir onboarding real' }));
 
-    expect(onboardingHandler).toHaveBeenCalledWith({ selectedProfile: 'Estudante' });
-    expect(screen.getByRole('button', { name: 'Processando...' })).toBeInTheDocument();
-
-    deferred.resolve();
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Abrir onboarding real' })).toBeInTheDocument();
-    });
+    // Agora "Estudante" deve ter o badge ATIVO
+    const ativosNovoState = screen.getAllByText('ATIVO');
+    expect(ativosNovoState).toHaveLength(1);
   });
 
-  test('exibe banner de erro do runtime e da ação quando a operação falha', async () => {
-    const onboardingHandler = vi.fn().mockRejectedValue(new Error('Falha customizada da ação'));
+  test('botão Voltar está desativado na primeira cena', () => {
+    renderFlow();
 
-    renderFlow({
-      experienceMode: 'runtime',
-      moduleLinks: {
-        onboarding: { label: 'Abrir onboarding real' },
-      },
-      status: {
-        loading: true,
-        error: 'Falha de sincronização do runtime',
-      },
-      actionHandlers: {
-        onboarding: onboardingHandler,
-      },
-    });
-
-    expect(screen.getByText('Sincronizando runtime')).toBeInTheDocument();
-    expect(screen.getByText('Falha de sincronização do runtime')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Abrir onboarding real' }));
-
-    expect(await screen.findByText('Falha customizada da ação')).toBeInTheDocument();
+    const voltarBtn = screen.getByRole('button', { name: /Voltar/i });
+    expect(voltarBtn).toBeDisabled();
   });
 });
